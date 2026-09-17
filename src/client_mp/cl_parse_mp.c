@@ -520,7 +520,7 @@ void CL_ParseSnapshot( msg_t *msg )
 		Com_Printf( "   snapshot:%i  delta:%i  ping:%i\n",
 		            *(int *)cl_snap_messageNum, cl_snap_deltaNum, cl_snap_ping );
 	}
-
+	
 	cl_newSnapshots = qtrue;
 }
 

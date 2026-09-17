@@ -2385,7 +2385,7 @@ static void UI_BuildServerDisplayList( qboolean force ) {
 	trap_Cvar_VariableStringBuffer( "cl_motdString", uiInfo.serverStatus.motd, sizeof( uiInfo.serverStatus.motd ) );
 	len = strlen( uiInfo.serverStatus.motd );
 	if ( len == 0 ) {
-		strcpy( uiInfo.serverStatus.motd, va( "%s - %s", UI_SafeTranslateString( "EXE_COD_MULTIPLAYER" ), "1.1" ) );
+		strcpy( uiInfo.serverStatus.motd, va( "%s - %s", UI_SafeTranslateString( "EXE_COD_MULTIPLAYER" ), "1.1x" ) );
 		len = strlen( uiInfo.serverStatus.motd );
 	}
 	if ( len != uiInfo.serverStatus.motdLen ) {
@@ -3776,7 +3776,7 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 			}
 		}
 	} else if ( !Q_stricmp( cstate.servername,"localhost" ) ) {
-		Text_PaintCenter( 320, 55, 0, 0.5, colorWhite, va( "%s - %s", UI_SafeTranslateString( "EXE_COD_MULTIPLAYER" ), "1.1" ), 0 );
+		Text_PaintCenter( 320, 55, 0, 0.5, colorWhite, va( "%s - %s", UI_SafeTranslateString( "EXE_COD_MULTIPLAYER" ), "1.1x" ), 0 );
 	} else {
 		if ( !Q_stricmp( cstate.servername, "Auto-Updater" ) ) {
 			trap_Cvar_VariableStringBuffer( "cl_downloadName", downloadName, sizeof( downloadName ) );

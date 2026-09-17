@@ -61,6 +61,7 @@ const char *com_quitReason;
 
 static jmp_buf abortframe;
 static int com_errorCode;
+extern int scr_updatingScreen;
 
 static char     *com_consoleLines[MAX_CONSOLE_LINES];
 static int com_numConsoleLines;
@@ -350,6 +351,9 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	}
 
 	com_errorCode = code;
+	/* Errors raised while drawing bypass SCR_UpdateScreen's normal cleanup.
+	 * Retail clears this guard before aborting so subsequent frames can draw. */
+	scr_updatingScreen = qfalse;
 	longjmp( abortframe, -1 );
 }
 
@@ -1074,7 +1078,7 @@ void Com_Init( char *commandLine ) {
 
 	FX_StaticInit();
 
-	Com_Printf( "%s %s build %s %s\n", "COD MP", "1.1", "win-x86", "Oct  8 2003" );
+	Com_Printf( "%s %s build %s %s\n", "COD MP", "1.1x", "win-x86", "Oct  8 2003" );
 
 	if ( setjmp( abortframe ) ) {
 		Com_ErrorCleanup();
@@ -1178,9 +1182,9 @@ void Com_Init( char *commandLine ) {
 	Cmd_AddCommand( "writeconfig", Com_WriteConfig_f );
 	Cmd_AddCommand( "writedefaults", Com_WriteDefaults_f );
 
-	s = va( "%s %s build %s %s", "COD MP", "1.1", getBuildNumber(), "win-x86" );
+	s = va( "%s %s build %s %s", "COD MP", "1.1x", getBuildNumber(), "win-x86" );
 	com_version = Cvar_Get( "version", s, CVAR_ROM | CVAR_SERVERINFO );
-	com_shortversion = Cvar_Get( "shortversion", "1.1", CVAR_ROM | CVAR_SERVERINFO );
+	com_shortversion = Cvar_Get( "shortversion", "1.1x", CVAR_ROM | CVAR_SERVERINFO );
 
 	Sys_Init();
 
