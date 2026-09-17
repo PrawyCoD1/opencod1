@@ -6273,7 +6273,8 @@ void __cdecl CFxScheduler__CreateEffect( _DWORD *self, int tmpl, int *bolt,
   {
     *(int *)&v132 = rand();                                  /* 0x004940F3 */
     v119 = (float)( *(int *)&v132 / 32768.0 * 360.0 );       /* 0x00494112 */
-    RotatePointAroundVector( &axis[0], &axis[3], axisIn + 3, v119 );
+    /* Roll the right vector around forward without changing emission direction. */
+    RotatePointAroundVector( &axis[3], &axis[0], axisIn + 3, v119 );
     v6 = tmpl;                                               /* 0x00494124 */
     axis[6] = axis[1] * axis[5] - axis[2] * axis[4];          /* 0x00494138 */
     axis[7] = axis[2] * axis[3] - axis[0] * axis[5];          /* 0x0049414E */
@@ -6395,7 +6396,7 @@ void __cdecl CFxScheduler__CreateEffect( _DWORD *self, int tmpl, int *bolt,
     tmp3[2] = axis[2] * ofs[0] + tmp3[2];
     *(int *)&v132 = rand();                                   /* 0x00494660 */
     v120 = (float)( *(int *)&v132 / 32768.0 * 360.0 );
-    RotatePointAroundVector( &axis[0], ofs, tmp3, v120 );     /* 0x00494681 */
+    RotatePointAroundVector( ofs, &axis[0], tmp3, v120 );     /* 0x00494681 */
     v6 = tmpl;
     start[0] = ofs[0] + start[0];                             /* 0x00494698 */
     start[1] = ofs[1] + start[1];
