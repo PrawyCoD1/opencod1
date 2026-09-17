@@ -1,0 +1,17 @@
+; cgame_mp_x86.dll -- the entire export surface.
+;
+; Confirmed against the IDB (port 13338) rather than assumed from game_mp.def:
+; idautils.Entries() on cgame_mp_x86.dll answers
+;   (0, 1, 0x30030460, 'dllEntry')  (1, 2, 0x300203B0, 'vmMain')
+; plus the CRT DllEntryPoint pseudo-entry, which is the PE entry point and not
+; an export at all.  Byte for byte the same surface the game module has: the
+; engine calls dllEntry once to install the syscall pointer
+; (client_mp/cl_cgame_mp.c) and reaches everything else through vmMain.
+;
+; Retail exports both undecorated and by ordinal, which is why neither function
+; carries __declspec(dllexport) in the reconstruction: the .def is what builds
+; the export table, and what keeps the two __cdecl names undecorated.
+LIBRARY cgame_mp_x86
+EXPORTS
+	dllEntry	@1
+	vmMain		@2

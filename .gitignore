@@ -1,0 +1,5 @@
+# build output + premake-generated projects
+/build/
+/src/*.sln
+/src/*.vcxproj
+/src/*.vcxproj.*

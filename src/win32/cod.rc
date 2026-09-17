@@ -1,0 +1,10 @@
+/*
+ * win32/cod.rc -- the application icon.
+ *
+ * cod.ico is the icon reconstructed from retail cod1-windows/CoDMP.exe
+ * (RT_GROUP_ICON id 1 -> RT_ICON id 1, a single 32x32 8bpp image).  Resource
+ * ID 1, the same id retail used, so Explorer and the taskbar show the retail
+ * icon on our build.  Retail links no VERSIONINFO or manifest, so neither is
+ * here.
+ */
+1 ICON "cod.ico"

@@ -1,0 +1,16 @@
+; ui_mp_x86.dll -- the entire export surface.
+;
+; Retail exports two names: dllEntry (ordinal 1, 0x40018E20) and vmMain
+; (ordinal 2, 0x400076A0) -- the same two RTCW-MP/src/ui/ui.def exports, in the
+; same ordinal order the other two modules use: the engine calls dllEntry once
+; to install the syscall pointer (client_mp/cl_ui_mp.c CL_InitUI) and reaches
+; everything else through vmMain.  The CRT DllEntryPoint is the PE entry point,
+; not an export.
+;
+; Retail exports both undecorated and by ordinal, which is why neither function
+; carries __declspec(dllexport): the .def is what builds the export table, and
+; what keeps the two __cdecl names undecorated.
+LIBRARY ui_mp_x86
+EXPORTS
+	dllEntry	@1
+	vmMain		@2

@@ -1,0 +1,11 @@
+; game_mp_x86.dll -- the entire export surface.
+;
+; The engine calls dllEntry once to install the syscall pointer
+; (server_mp/sv_game_mp.c) and reaches everything else through vmMain.  Retail
+; exports exactly these two, undecorated and by ordinal, which is why neither
+; function carries __declspec(dllexport) in the reconstruction: the .def is what
+; builds the export table, and it is what keeps the __cdecl names undecorated.
+LIBRARY game_mp_x86
+EXPORTS
+	dllEntry	@1
+	vmMain		@2
