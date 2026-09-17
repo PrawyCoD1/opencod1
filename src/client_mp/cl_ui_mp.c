@@ -30,6 +30,7 @@ extern int CIN_PlayCinematic();
 extern int CIN_RunCinematic( int handle );
 extern void CIN_SetExtents( int handle, int x, int y, int w, int h );
 extern int CIN_StopCinematic();
+extern void CL_SortGlobalServers( void );
 extern int CL_GetAutoUpdate();
 extern int CL_GetPing();
 extern int CL_GetPingQueueCount();
@@ -103,6 +104,7 @@ void LAN_LoadCachedServers()
       cls_numGlobalServerAddresses = 0;
     }
     FS_FCloseFile(v0);
+    CL_SortGlobalServers();
   }
 }
 
@@ -230,6 +232,8 @@ int __cdecl LAN_AddServer(int a1, char *Source, char *s)
   v8[31] = 0;
   result = 1;
   *(_DWORD *)&v15[184 * (*v4)++ + 172] = 1;
+  if ( a1 == 1 )
+    CL_SortGlobalServers();
   return result;
 }
 

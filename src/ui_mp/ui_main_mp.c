@@ -153,6 +153,7 @@ static void UI_StopServerRefresh( void );
 static void UI_DoServerRefresh( void );
 static void UI_FeederSelection( float feederID, int index );
 static void UI_BuildServerDisplayList( qboolean force );
+static void UI_UpdateDisplayServers( void );
 static void UI_BuildServerStatus( qboolean force );
 static void UI_BuildFindPlayerList( qboolean force );
 static int QDECL UI_ServersQsortCompare( const void *arg1, const void *arg2 );
@@ -2021,8 +2022,11 @@ static void UI_RunMenuScript( char **args ) {
 			UI_BuildServerDisplayList( qtrue );
 			UI_FeederSelection( FEEDER_SERVERS, 0 );
 		} else if ( Q_stricmp( name, "ServerStatus" ) == 0 ) {
-			trap_LAN_GetServerAddressString( ui_netSource.integer, uiInfo.serverStatus.displayServers[uiInfo.serverStatus.currentServer], uiInfo.serverStatusAddress, sizeof( uiInfo.serverStatusAddress ) );
-			UI_BuildServerStatus( qtrue );
+			UI_UpdateDisplayServers();
+			if ( uiInfo.serverStatus.currentServer >= 0 && uiInfo.serverStatus.currentServer < uiInfo.serverStatus.numDisplayServers ) {
+				trap_LAN_GetServerAddressString( ui_netSource.integer, uiInfo.serverStatus.displayServers[uiInfo.serverStatus.currentServer], uiInfo.serverStatusAddress, sizeof( uiInfo.serverStatusAddress ) );
+				UI_BuildServerStatus( qtrue );
+			}
 		} else if ( Q_stricmp( name, "FoundPlayerServerStatus" ) == 0 ) {
 			Q_strncpyz( uiInfo.serverStatusAddress, uiInfo.foundPlayerServerAddresses[uiInfo.currentFoundPlayerServer], sizeof( uiInfo.serverStatusAddress ) );
 			UI_BuildServerStatus( qtrue );
@@ -2033,6 +2037,7 @@ static void UI_RunMenuScript( char **args ) {
 			uiInfo.serverStatusInfo.numLines = 0;
 			Menu_SetFeederSelection( NULL, FEEDER_FINDPLAYER, 0, NULL );
 		} else if ( Q_stricmp( name, "JoinServer" ) == 0 ) {
+			UI_UpdateDisplayServers();
 			trap_Cvar_Set( "cg_thirdPerson", "0" );
 			if ( uiInfo.serverStatus.currentServer >= 0 && uiInfo.serverStatus.currentServer < uiInfo.serverStatus.numDisplayServers ) {
 				trap_LAN_GetServerAddressString( ui_netSource.integer, uiInfo.serverStatus.displayServers[uiInfo.serverStatus.currentServer], buff, 1024 );
@@ -2291,7 +2296,9 @@ static void UI_InsertServerIntoDisplayList( int num, int position ) {
 	if ( position < 0 || position > uiInfo.serverStatus.numDisplayServers ) {
 		return;
 	}
-	//
+	if ( position <= uiInfo.serverStatus.currentServer ) {
+		uiInfo.serverStatus.currentServer++;
+	}
 	uiInfo.serverStatus.numDisplayServers++;
 	for ( i = uiInfo.serverStatus.numDisplayServers; i > position; i-- ) {
 		uiInfo.serverStatus.displayServers[i] = uiInfo.serverStatus.displayServers[i - 1];
@@ -2367,6 +2374,26 @@ trap_ClearDisplayedServers is ui_public.h's name for LAN_MarkServerVisible,
 trap_LAN_ServerIsDirty its name for LAN_ServerIsVisible.
 ==================
 */
+/* CoD 1.5 UI_ClearDisplayedServers; use the unused numServers field
+ * for the remembered count to preserve this module's existing layout. */
+static void UI_ClearDisplayedServers( void ) {
+	uiInfo.serverStatus.numDisplayServers = 0;
+	uiInfo.serverStatus.numPlayersOnServers = 0;
+	uiInfo.serverStatus.numServers = trap_LAN_GetServerCount( ui_netSource.integer );
+}
+
+/* CoD 1.5 UI_UpdateDisplayServers (ui_mp.dll.c). */
+static void UI_UpdateDisplayServers( void ) {
+	int count = trap_LAN_GetServerCount( ui_netSource.integer );
+	if ( uiInfo.serverStatus.numServers != count ) {
+		uiInfo.serverStatus.numServers = count;
+		if ( uiInfo.serverStatus.numDisplayServers ) {
+			uiInfo.serverStatus.currentServer = -1;
+			UI_BuildServerDisplayList( qtrue );
+		}
+	}
+}
+
 static void UI_BuildServerDisplayList( qboolean force ) {
 	int i, count, clients, maxClients, ping, len;
 	char info[MAX_STRING_CHARS];
@@ -2396,10 +2423,11 @@ static void UI_BuildServerDisplayList( qboolean force ) {
 	if ( force ) {
 		numinvisible = 0;
 		// clear number of displayed servers
-		uiInfo.serverStatus.numDisplayServers = 0;
-		uiInfo.serverStatus.numPlayersOnServers = 0;
+		UI_ClearDisplayedServers();
 		// set list box index to zero
-		Menu_SetFeederSelection( NULL, FEEDER_SERVERS, 0, NULL );
+		if ( uiInfo.serverStatus.currentServer >= 0 ) {
+			Menu_SetFeederSelection( NULL, FEEDER_SERVERS, 0, NULL );
+		}
 		// mark all servers as visible so we store ping updates for them
 		trap_ClearDisplayedServers( ui_netSource.integer, -1, qtrue );
 	}
@@ -2408,8 +2436,7 @@ static void UI_BuildServerDisplayList( qboolean force ) {
 	count = trap_LAN_GetServerCount( ui_netSource.integer );
 	if ( count == -1 || ( ui_netSource.integer == AS_LOCAL && count == 0 ) ) {
 		// still waiting on a response from the master
-		uiInfo.serverStatus.numDisplayServers = 0;
-		uiInfo.serverStatus.numPlayersOnServers = 0;
+		UI_ClearDisplayedServers();
 		uiInfo.serverStatus.nextDisplayRefresh = uiInfo.uiDC.realTime + 500;
 		return;
 	}
@@ -2739,6 +2766,7 @@ static void UI_BuildFindPlayerList( qboolean force ) {
 		numFound = 0;
 		numTimeOuts++;
 	}
+	UI_UpdateDisplayServers();
 	for ( i = 0; i < MAX_SERVERSTATUSREQUESTS; i++ ) {
 		// if this pending server is valid
 		if ( uiInfo.pendingServerStatus.server[i].valid ) {
@@ -2791,6 +2819,7 @@ static void UI_BuildFindPlayerList( qboolean force ) {
 			// reuse pending slot
 			uiInfo.pendingServerStatus.server[i].valid = qfalse;
 			// if we didn't try to get the status of all servers in the main browser yet
+			UI_UpdateDisplayServers();
 			if ( uiInfo.pendingServerStatus.num < uiInfo.serverStatus.numDisplayServers ) {
 				uiInfo.pendingServerStatus.server[i].startTime = uiInfo.uiDC.realTime;
 				trap_LAN_GetServerAddressString( ui_netSource.integer, uiInfo.serverStatus.displayServers[uiInfo.pendingServerStatus.num],
@@ -2848,6 +2877,7 @@ static void UI_BuildServerStatus( qboolean force ) {
 		// reset all server status requests
 		trap_LAN_ServerStatus( NULL, NULL, 0 );
 	}
+	UI_UpdateDisplayServers();
 	if ( uiInfo.serverStatus.currentServer < 0 || uiInfo.serverStatus.currentServer > uiInfo.serverStatus.numDisplayServers || uiInfo.serverStatus.numDisplayServers == 0 ) {
 		return;
 	}
@@ -2872,6 +2902,7 @@ static int UI_FeederCount( float feederID ) {
 	} else if ( feederID == FEEDER_MAPS || feederID == FEEDER_ALLMAPS ) {
 		return UI_MapCountByGameType();
 	} else if ( feederID == FEEDER_SERVERS ) {
+		UI_UpdateDisplayServers();
 		return uiInfo.serverStatus.numDisplayServers;
 	} else if ( feederID == FEEDER_SERVERSTATUS ) {
 		return uiInfo.serverStatusInfo.numLines;
@@ -2960,6 +2991,7 @@ static const char *UI_FeederItemText( float feederID, int index, int column, qha
 		int actual;
 		return UI_SelectedMap( index, &actual );
 	} else if ( feederID == FEEDER_SERVERS ) {
+		UI_UpdateDisplayServers();
 		if ( index >= 0 && index < uiInfo.serverStatus.numDisplayServers ) {
 			int ping;
 			if ( lastColumn != column || lastTime > uiInfo.uiDC.realTime + 5000 ) {
@@ -4094,6 +4126,8 @@ static void UI_DoServerRefresh( void ) {
 		}
 	}
 
+	UI_UpdateDisplayServers();
+
 	// if still trying to retrieve pings
 	if ( trap_LAN_UpdateVisiblePings( ui_netSource.integer ) ) {
 		uiInfo.serverStatus.refreshtime = uiInfo.uiDC.realTime + 1000;
@@ -4127,8 +4161,7 @@ static void UI_StartServerRefresh( qboolean full ) {
 	uiInfo.serverStatus.refreshActive = qtrue;
 	uiInfo.serverStatus.nextDisplayRefresh = uiInfo.uiDC.realTime + 1000;
 	// clear number of displayed servers
-	uiInfo.serverStatus.numDisplayServers = 0;
-	uiInfo.serverStatus.numPlayersOnServers = 0;
+	UI_ClearDisplayedServers();
 	// mark all servers as visible so we store ping updates for them
 	trap_ClearDisplayedServers( ui_netSource.integer, -1, qtrue );
 	// reset all the pings

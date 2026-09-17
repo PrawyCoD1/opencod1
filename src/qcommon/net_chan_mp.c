@@ -526,6 +526,24 @@ qboolean NET_CompareAdr( netadr_t a, netadr_t b ) {
 	return qfalse;
 }
 
+/* CoD 1.5: NET_CompareAdrSigned (Call of Duty MP.c). */
+int NET_CompareAdrSigned( const netadr_t *a, const netadr_t *b ) {
+	if ( a->type != b->type ) {
+		return (int)a->type - (int)b->type;
+	}
+	switch ( a->type ) {
+	case NA_LOOPBACK:
+		return 0;
+	case NA_IP:
+		return a->port != b->port ? (int)a->port - (int)b->port : memcmp( a->ip, b->ip, 4 );
+	case NA_IPX:
+		return a->port != b->port ? (int)a->port - (int)b->port : memcmp( a->ipx, b->ipx, 10 );
+	default:
+		Com_Printf( "NET_CompareAdrSigned: bad address type\n" );
+		return 0;
+	}
+}
+
 /* NET_IsLocalAddress  0x004492D0  VERIFIED */
 qboolean NET_IsLocalAddress( netadr_t adr ) {
 	return (qboolean)( adr.type == NA_LOOPBACK || adr.type == NA_BOT );

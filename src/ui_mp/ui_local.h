@@ -177,7 +177,7 @@ typedef struct serverStatus_s {
 	int         nextpingtime;               /* +0x0448 no CoD access */
 	int         maxservers;                 /* +0x044C no CoD access */
 	int         refreshtime;                /* +0x0450 */
-	int         numServers;                 /* +0x0454 no CoD access */
+	int         numServers;                 /* +0x0454: 1.5 browser remembered server count */
 	int         sortKey;                    /* +0x0458 */
 	int         sortDir;                    /* +0x045C UI_ServersQsortCompare 0x40009DC2 */
 	int         lastCount;                  /* +0x0460 no CoD access */

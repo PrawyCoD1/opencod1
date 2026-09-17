@@ -1707,9 +1707,45 @@ void CL_InitServerInfo( serverInfo_t *server, serverAddress_t *address ) {
 	server->allowAnonymous = 0;
 }
 
+/* CoD 1.5: CL_FindServerInfo (0x001133E0 in Call of Duty MP.c). */
+static qboolean CL_FindServerInfo( serverAddress_t *address ) {
+	int low = 0, high = cls_numglobalservers, mid, cmp;
+	netadr_t adr = { 0 };
+	adr.type = NA_IP;
+	memcpy( adr.ip, address->ip, sizeof( adr.ip ) );
+	adr.port = address->port;
+	while ( low < high ) {
+		mid = ( low + high ) / 2;
+		cmp = NET_CompareAdrSigned( &adr, &cls_globalServers[mid].adr );
+		if ( cmp < 0 ) {
+			high = mid;
+		} else if ( cmp > 0 ) {
+			low = mid + 1;
+		} else {
+			while ( mid > 0 && !NET_CompareAdrSigned( &adr, &cls_globalServers[mid - 1].adr ) ) {
+				mid--;
+			}
+			do {
+				CL_InitServerInfo( &cls_globalServers[mid++], address );
+			} while ( mid < cls_numglobalservers && !NET_CompareAdrSigned( &adr, &cls_globalServers[mid].adr ) );
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+/* CoD 1.5: CL_CompareAdrSigned / CL_SortGlobalServers (0x00113520). */
+static int __cdecl CL_CompareAdrSigned( const void *a, const void *b ) {
+	return NET_CompareAdrSigned( &((const serverInfo_t *)a)->adr, &((const serverInfo_t *)b)->adr );
+}
+
+void CL_SortGlobalServers( void ) {
+	qsort( cls_globalServers, cls_numglobalservers, sizeof( serverInfo_t ), CL_CompareAdrSigned );
+}
+
 /* ---- CL_ServersResponsePacket  0x004107B0 ---- */
 void CL_ServersResponsePacket( netadr_t from, msg_t *msg ) {
-	int i, count, total;
+	int i, count;
 	serverAddress_t addresses[MAX_SERVERSPERPACKET];
 	int numservers;
 	byte *buffptr;
@@ -1768,27 +1804,15 @@ void CL_ServersResponsePacket( netadr_t from, msg_t *msg ) {
 
 	count = cls_numglobalservers;
 
+	/* 1.5 searches the previously sorted list, then sorts after the packet. */
 	for ( i = 0; i < numservers && count < MAX_GLOBAL_SERVERS; i++ ) {
-		serverInfo_t *server = &cls_globalServers[count];
-
-		CL_InitServerInfo( server, &addresses[i] );
-		count++;
+		if ( !CL_FindServerInfo( &addresses[i] ) ) {
+			CL_InitServerInfo( &cls_globalServers[count++], &addresses[i] );
+		}
 	}
-
-	if ( cls_numGlobalServerAddresses < MAX_GLOBAL_SERVERS && i < numservers ) {
-		do {
-			if ( count < MAX_GLOBAL_SERVERS ) {
-				break;
-			}
-			cls_globalServerAddresses[cls_numGlobalServerAddresses++] = addresses[i];
-			i++;
-		} while ( i < numservers );
-	}
-
 	cls_numglobalservers = count;
-	total = count + cls_numGlobalServerAddresses;
-
-	Com_Printf( "%d servers parsed (total %d)\n", numservers, total );
+	CL_SortGlobalServers();
+	Com_Printf( "%d servers parsed (total %d)\n", numservers, count );
 }
 
 /* ---- CL_ConnectionlessPacket  0x004109D0 ----  [HIGH] */
@@ -3343,15 +3367,6 @@ qboolean CL_UpdateVisiblePings_f( int source ) {
 						NET_OutOfBandPrint( NS_CLIENT, cl_pinglist[j].adr,
 											"getinfo xxx" );
 						slots++;
-					}
-				}
-				else if ( server[i].ping == 0 ) {
-					if ( source == AS_GLOBAL ) {
-						if ( cls_numGlobalServerAddresses > 0 ) {
-							cls_numGlobalServerAddresses--;
-							CL_InitServerInfo( &server[i],
-								&cls_globalServerAddresses[cls_numGlobalServerAddresses] );
-						}
 					}
 				}
 			}

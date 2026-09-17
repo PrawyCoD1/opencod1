@@ -169,6 +169,7 @@ typedef struct netadr_t
 	unsigned short port;
 } netadr_t;
 COD1_ASSERT_SIZE( netadr_t, 20 );
+int NET_CompareAdrSigned( const netadr_t *a, const netadr_t *b );
 
 /* CoD: RTCW's msg_t leads with allowoverflow and carries an oob flag; 1.1 has
  * neither.  Out-of-band is tracked by the caller instead. */
