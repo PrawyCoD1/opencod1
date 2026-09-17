@@ -1575,8 +1575,6 @@ void CL_InitDownloads( void ) {
 		}
 	} else if ( FS_ComparePaks( (char *)clc_downloadList,
 								sizeof( clc_downloadList ), qtrue ) ) {
-		Com_Printf( "Need paks: %s\n", clc_downloadList );
-
 		if ( *clc_downloadList ) {
 			cls_state = CA_CONNECTED;
 			CL_NextDownload();
