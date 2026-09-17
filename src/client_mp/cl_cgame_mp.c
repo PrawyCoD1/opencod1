@@ -532,6 +532,16 @@ rescan:
 
 	case 'w':
 		if ( Cmd_Argc() >= 2 ) {
+			if ( !strcmp( Cmd_Argv( 1 ), "EXE_UNPURECLIENTDETECTED" ) ) {
+				char paks[1024];
+				int count = FS_ListUnapprovedReferencedPaks( paks, sizeof( paks ) );
+				Com_Error( ERR_SERVERDISCONNECT, "%s\n\n%s%s",
+					va( SEH_SafeTranslateString( "EXE_SERVERDISCONNECTREASON" ),
+						SEH_SafeTranslateString( "EXE_UNPURECLIENTDETECTED" ) ),
+					count ? "PK3s not allowed by this server: " :
+						"No specific PK3 could be identified from the server's allowed list.",
+					count ? paks : "" );
+			}
 			Com_Error( ERR_SERVERDISCONNECT,
 			           va( SEH_SafeTranslateString( "EXE_SERVERDISCONNECTREASON" ),
 			               SEH_SafeTranslateString( Cmd_Argv( 1 ) ) ) );
