@@ -1834,6 +1834,15 @@ void CL_KeyEvent( int key, int down, unsigned time ) {
 			VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
 			return;
 		}
+		/* CoD 1.5 CL_KeyEvent: Escape cancels states 1..3, including
+		 * UDP downloads, instead of merely opening the main menu. */
+		if ( cls_state >= CA_CONNECTING && cls_state <= CA_CONNECTED ) {
+			CL_Disconnect( qtrue );
+			if ( com_sv_running->integer ) {
+				Cvar_Set( "sv_killserver", "1" );
+			}
+			return;
+		}
 		if ( uivm ) {
 			VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
 		}
