@@ -3710,11 +3710,11 @@ static void UI_DisplayDownloadInfo( const char *downloadName, float centerPoint,
 	trap_R_Text_Paint( 24, yStart + 235, font, scale, colorLtGrey, UI_SafeTranslateString( etaText ), 0, 64, ITEM_TEXTSTYLE_SHADOWED );
 	trap_R_Text_Paint( 24, yStart + 260, font, scale, colorLtGrey, UI_SafeTranslateString( xferText ), 0, 64, ITEM_TEXTSTYLE_SHADOWED );
 
-	// the name is shown past its first eight characters (0x4000E13A)
+	// CoD 1.5 displays the complete download name without the 1.1 +8 offset.
 	if ( downloadSize > 0 ) {
-		s = va( "%s (%d%%)", downloadName + 8, downloadCount * 100 / downloadSize );
+		s = va( "%s (%d%%)", downloadName, downloadCount * 100 / downloadSize );
 	} else {
-		s = downloadName + 8;
+		s = downloadName;
 	}
 
 	trap_R_Text_Paint( 192, yStart + 210, font, scale, colorLtGrey, s, 0, 0, ITEM_TEXTSTYLE_SHADOWED );
