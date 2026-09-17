@@ -3475,7 +3475,9 @@ qboolean __cdecl CL_CDKeyValidate( const char *key, const char *checksum )
 	if ( !checksum ) {
 		return qtrue;
 	}
-	return Q_stricmpn( checksum, buffer, 99999 ) == 0 ? qtrue : qfalse;
+	/* CoD 1.5 compares only this key's four checksum characters. fs_game
+	 * appends the mod checksum at +4, replacing the base slot's terminator. */
+	return Q_stricmpn( checksum, buffer, 4 ) == 0 ? qtrue : qfalse;
 }
 
 /* ---- CL_SetupForNewServerMap  0x004142F0 ----  VERIFIED */
