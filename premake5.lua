@@ -106,10 +106,17 @@ project "CodMP"
     removefiles {
         SRC.."/game_mp/**", SRC.."/cgame_mp/**", SRC.."/ui_mp/**",
         SRC.."/null/**", SRC.."/Debug/**", SRC.."/Release/**",
+        SRC.."/third_party/**",
     }
     files { SRC.."/win32/cod.rc" }       -- app icon (cod.rc -> cod.ico)
     links (WIN_LIBS)
+    links { "discord_rpc", "psapi" }
     exeLinkFlags()
+
+    postbuildcommands {
+        '{COPYFILE} "'..path.getabsolute(SRC..'/third_party/discord-rpc/LICENSE')..'" "%{cfg.targetdir}/discord-rpc-LICENSE.txt"',
+        '{COPYFILE} "'..path.getabsolute(SRC..'/third_party/rapidjson/license.txt')..'" "%{cfg.targetdir}/rapidjson-LICENSE.txt"',
+    }
 
 -- ========================= CodMP-ded (server) ==========================
 project "CodMP-ded"
@@ -121,6 +128,7 @@ project "CodMP-ded"
         SRC.."/renderer/**", SRC.."/client_mp/**", SRC.."/miles/**",
         SRC.."/botlib/**", SRC.."/game_mp/**", SRC.."/cgame_mp/**",
         SRC.."/ui_mp/**", SRC.."/Debug/**", SRC.."/Release/**",
+        SRC.."/third_party/**",
         -- win32/ and xanim/ hold client and server units side by side; the
         -- render window, its input/sound/GL bindings and the GL VBO optimiser go.
         SRC.."/xanim/xmodel_optimize.c",
@@ -131,6 +139,18 @@ project "CodMP-ded"
     files { SRC.."/win32/cod.rc" }
     links (WIN_LIBS)
     exeLinkFlags()
+
+-- ======================== Discord RPC (built in) =======================
+project "discord_rpc"
+    kind "StaticLib"
+    compileas "C++"
+    cppdialect "C++14"
+    exceptionhandling "On"
+    removelinkoptions { "/MAP", "/OPT:REF", "/OPT:ICF" }
+    defines { "DISCORD_WINDOWS" }
+    includedirs { SRC.."/third_party/discord-rpc", SRC.."/third_party/rapidjson/include" }
+    files { SRC.."/third_party/discord-rpc/src/**.cpp", SRC.."/third_party/discord-rpc/src/**.h",
+            SRC.."/third_party/discord-rpc/**.h" }
 
 -- ============================ game_mp_x86.dll ==========================
 project "game_mp"

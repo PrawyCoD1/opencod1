@@ -7,6 +7,7 @@
 #include "../qcommon/cod1_globals.h"
 #include "cl_records.h"
 #include "cl_vm.h"
+#include "cl_discord.h"
 
 extern void CL_ParseServerMessage( msg_t *msg );
 extern void MSS_StopSounds( int flags );        /* 0x0044FA40 */
@@ -3860,6 +3861,7 @@ void CL_Frame( int msec ) {
 	CL_CheckForResend();
 	CL_SetCGameTime();
 	CL_UpdateInGameState();
+	CL_DiscordFrame();
 
 	SCR_UpdateScreen();
 
@@ -4009,6 +4011,7 @@ void CL_Init( void ) {
 	SCR_Init();
 
 	Cvar_Set2( "cl_running", "1", qtrue );
+	CL_DiscordInit();
 
 	Com_Printf( "----- Client Initialization Complete -----\n" );
 }
@@ -4024,6 +4027,7 @@ void CL_Shutdown( void ) {
 		return;
 	}
 	recursive = 1;
+	CL_DiscordShutdown();
 
 	/* 0x00412826: retail disconnects the client before tearing it down -- push 1;
 	 * call CL_Disconnect, right after CL_ShutdownDebugData and before
