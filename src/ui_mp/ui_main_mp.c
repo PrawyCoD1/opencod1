@@ -3872,7 +3872,7 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 	case CA_CONNECTED:
 		trap_Cvar_VariableStringBuffer( "cl_downloadName", downloadName, sizeof( downloadName ) );
 		if ( *downloadName ) {
-			UI_DisplayDownloadInfo( downloadName, 320, 55, 0, 0.5 );
+			UI_DisplayDownloadInfo( downloadName, 320, 55, 0, 0.25 );
 			return;
 		}
 		s = UI_SafeTranslateString( "EXE_AWAITINGGAMESTATE" );
