@@ -20,7 +20,9 @@ extern int  SetCursorPos( int x, int y );
 extern int  SetCapture( void *hWnd );
 
 extern int  g_wv_sysMsgTime;
+#ifndef DEDICATED
 extern int  WIN_IsGameWindowActive( void );
+#endif
 
 void IN_JoyMove( void );
 /* IN_Init (0x00461960) calls all three of these, which are defined below it. */
@@ -247,6 +249,10 @@ int __cdecl IN_Activate(int result)
 /* ---- IN_Frame  0x00461A80 ----  VERIFIED */
 int IN_Frame()
 {
+#ifdef DEDICATED
+  /* Dedicated servers have no game window or local input to capture. */
+  return 0;
+#else
   int result;
   cvar_t *Var;
 
@@ -281,6 +287,7 @@ int IN_Frame()
     }
   }
   return result;
+#endif
 }
 
 /* ---- IN_ClearStates  0x00461AF0 ----  VERIFIED */

@@ -582,7 +582,7 @@ void Sys_CreateSplashWindow( void ) {
 
 	g_splashWnd = CreateWindowEx( WS_EX_APPWINDOW,
 	                              "CoD Splash Screen",
-	                              "Call of Duty Multiplayer",
+	                              "Call of Duty 1.1x Multiplayer",
 	                              WS_POPUP | WS_BORDER | WS_SYSMENU,
 	                              ( swidth - 320 ) / 2,
 	                              ( sheight - 100 ) / 2,

@@ -41,7 +41,7 @@ extern char    *SEH_GetLocalizedString_m( const char *reference );
 #define RSERR_INVALID_FULLSCREEN 1
 #define RSERR_INVALID_MODE  2
 
-#define WINDOW_CLASS_NAME   "Call of Duty Multiplayer"
+#define WINDOW_CLASS_NAME   "Call of Duty 1.1x Multiplayer"
 
 extern void WG_CheckHardwareGamma( void );
 extern void WG_RestoreGamma( void );
