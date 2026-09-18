@@ -409,7 +409,7 @@ void SV_SpawnServer( const char *server, qboolean killBots ) {
 	int i;
 	int checksum;
 	int matchState;
-	char systemInfo[MAX_STRING_CHARS];
+	char systemInfo[BIG_INFO_STRING];
 	client_t    *client;
 	cvar_t      *var;
 
