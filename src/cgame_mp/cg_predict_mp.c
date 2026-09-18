@@ -80,7 +80,6 @@ qboolean    BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *
 /* bg_misc.c's eventnames[] index for "EV_ITEM_PICKUP". */
 #define EV_ITEM_PICKUP              146
 
-#define CMD_BACKUP                  64
 
 #define ANGLE2SHORT( x )            ( (int)( (x) * ( 65536.0f / 360.0f ) ) & 65535 )
 

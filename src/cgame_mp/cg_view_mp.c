@@ -103,8 +103,6 @@
 /* snapshot_t::snapFlags; Q3's bit, tested at 0x30033C26. */
 #define SNAPFLAG_NOT_ACTIVE     2
 
-/* trap_GetCurrentCmdNumber() - CMD_BACKUP + 1 is the -63 at 0x30033C51. */
-#define CMD_BACKUP              64
 
 /* CG_AddLagometerFrameInfo's ring is 128 deep (0x30033A07). */
 #define LAG_SAMPLES             128

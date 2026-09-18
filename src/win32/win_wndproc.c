@@ -16,6 +16,12 @@
 
 int g_wv_isMinimized;
 
+int WIN_IsGameWindowActive( void )
+{
+  HWND hWnd = (HWND) g_wv_hWnd;
+  return hWnd && GetForegroundWindow() == hWnd && !IsIconic( hWnd );
+}
+
 int IN_DeactivateWin32Mouse( void );        /* 0x004616B0 */
 int IN_MouseEvent( int mstate );            /* 0x004617D0 */
 extern int Key_ClearStates();

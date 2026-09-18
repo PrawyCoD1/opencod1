@@ -59,6 +59,9 @@ typedef struct kbutton_s
 #define cl_mouseIndex			cl_mouseIndex
 #define cl_joystickAxis			cl_joystickAxis
 
+/* Expanded independently of the original fixed-address client layout. */
+unsigned char stru_143A9B0[UCMD_SIZE * CMD_BACKUP];
+
 #define cl_cmds					( (usercmd_t *)stru_143A9B0 )
 
 #define OUTPACKET_CMDNUMBER( i )	dword_143AFB4[ ( (i) & PACKET_MASK ) * 3 ]

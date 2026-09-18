@@ -119,7 +119,7 @@ extern int cl_parseEntitiesNum;   /* 0x0143A940, 4 bytes */
 extern char cl_snap_messageNum[4];   /* 0x01432970, 4 bytes */
 extern int cl_snap_serverTime;   /* 0x0143296C, 4 bytes */
 extern int cl_snapshots[67584];   /* 0x0143B134, 270336 bytes */
-extern unsigned char stru_143A9B0[1536];   /* 0x0143A9B0, 1536 bytes */
+extern unsigned char stru_143A9B0[UCMD_SIZE * CMD_BACKUP];
 
 extern int CIN_DrawCinematic();
 extern int CIN_PlayCinematic();

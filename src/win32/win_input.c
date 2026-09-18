@@ -20,6 +20,7 @@ extern int  SetCursorPos( int x, int y );
 extern int  SetCapture( void *hWnd );
 
 extern int  g_wv_sysMsgTime;
+extern int  WIN_IsGameWindowActive( void );
 
 void IN_JoyMove( void );
 /* IN_Init (0x00461960) calls all three of these, which are defined below it. */
@@ -75,8 +76,7 @@ int IN_DeactivateWin32Mouse()
 {
   int result;
 
-  if ( !com_developer->integer )
-    ClipCursor(0);
+  ClipCursor(0);
   ReleaseCapture();
   do
     result = ShowCursor(1);
@@ -250,6 +250,11 @@ int IN_Frame()
   int result;
   cvar_t *Var;
 
+  /* A background/minimized window must never capture or recenter the cursor,
+   * even if its activation message has not updated in_appactive yet. */
+  if ( !in_appactive || !WIN_IsGameWindowActive() )
+    return IN_DeactivateMouse();
+
   IN_JoyMove();
   result = s_wmv_mouseInitialized;
   if ( s_wmv_mouseInitialized )
@@ -259,7 +264,7 @@ int IN_Frame()
       && in_appactive )
     {
       IN_ActivateMouse();
-      return IN_MouseMove();
+      return s_wmv_mouseActive ? IN_MouseMove() : 0;
     }
     else
     {

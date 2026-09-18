@@ -3108,7 +3108,8 @@ extern void *snd_tempBuildHead;   /* 0x00893DF0, 4 bytes */
 extern int sourceFiles[64];   /* 0x01646440, 256 bytes */
 extern int statCount;   /* 0x008E1DD0, 4 bytes */
 extern unsigned char stateFields[1784];   /* 0x005419D0, 1784 bytes */
-extern unsigned char stru_143A9B0[1536];   /* 0x0143A9B0, 1536 bytes */
+#include "cmd_history.h"
+extern unsigned char stru_143A9B0[UCMD_SIZE * CMD_BACKUP];
 extern unsigned char cls_authorizeServer[20];   /* 0x015CA428, 20 bytes */
 extern unsigned char stru_541C98[1072];   /* 0x00541C98, 1072 bytes */
 extern unsigned char stru_541FC0[264];   /* 0x00541FC0, 264 bytes */

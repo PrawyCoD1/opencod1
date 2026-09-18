@@ -1055,8 +1055,8 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits,
 	r.bottom = height;
 
 	if ( cdsFullscreen ) {
-		exstyle		= WS_EX_TOPMOST;
-		stylebits	= WS_POPUP | WS_VISIBLE;
+		exstyle		= WS_EX_LEFT;
+		stylebits	= WS_POPUP | WS_VISIBLE | WS_SYSMENU;
 	} else {
 		exstyle		= 0;
 		stylebits	= WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_VISIBLE |

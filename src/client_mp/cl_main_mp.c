@@ -657,7 +657,7 @@ void CL_ClearState( void )
 	Com_Memset( &cl_viewanglesYaw, 0, 4 );                       /* 0x0143A9A4 */
 	Com_Memset( &cl_viewanglesRoll, 0, 4 );                         /* 0x0143A9A8 */
 	Com_Memset( &cl_serverId, 0, 4 );                       /* 0x0143A9AC */
-	Com_Memset( stru_143A9B0, 0, 1536 );                      /* 0x0143A9B0 */
+	Com_Memset( stru_143A9B0, 0, sizeof( stru_143A9B0 ) );                      /* 0x0143A9B0 */
 	Com_Memset( &cl_cmdNumber, 0, 4 );                        /* 0x0143AFB0 */
 	Com_Memset( dword_143AFB4, 0, 384 );                      /* 0x0143AFB4 */
 	Com_Memset( dword_143AFB8, 0, 380 );                      /* 0x0143AFB8 */
@@ -1222,7 +1222,9 @@ void __cdecl CL_Vid_Restart_f( void )
 	CL_ShutdownRef();
 
 	CL_ResetPureClientAtServer();
-	FS_ClearPakReferences( 0 );
+	/* 1.5 preserves general asset references across renderer restarts;
+	 * only the UI/cgame DLL references are rebuilt. */
+	FS_ClearPakReferences( 1 );
 
 	CL_ShutdownCGame();
 	CL_ShutdownUI();
