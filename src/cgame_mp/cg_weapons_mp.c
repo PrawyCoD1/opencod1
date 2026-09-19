@@ -388,6 +388,8 @@ static void CG_ProcessWeaponNoteTracks( void ) {
 	int numNotes;
 	int i;
 
+	alias = NULL;
+
 	if ( !cg.predictedPlayerState.weapon ) {
 		return;
 	}
@@ -395,7 +397,7 @@ static void CG_ProcessWeaponNoteTracks( void ) {
 	cgWeapon = &cg_weapons[ cg.predictedPlayerState.weapon ];
 	numNotes = trap_syscall_0x96( (int)&notes );
 	for ( i = 0; i < numNotes; i++ ) {
-		alias = NULL;
+
 		if ( !_stricmp( notes[i * 3], "noteTrackSoundA" ) ) {
 			alias = cgWeapon->noteTrackSoundA;
 		} else if ( !_stricmp( notes[i * 3], "noteTrackSoundB" ) ) {
@@ -2082,7 +2084,7 @@ void CG_DrawWeaponSelect( void ) {
 		}
 		CG_DrawPic( x - size * height * 0.5f, pos, size * height, height * 32.0f,
 					cgWeapon->hudIcon );
-		x -= width;
+		x -= width * 0.5f;   /* net advance is one width; the other 0.5 was applied above (retail 0x30037e68) */
 
 		drawColor[0] = 0.5f;
 		drawColor[1] = 0.5f;
@@ -2483,11 +2485,13 @@ static qboolean CG_SelectFirstWeaponNotInSlot( qboolean next, qboolean checkAmmo
 			case WEAPSLOT_PRIMARYB:
 				occupant = (signed char)cg.predictedPlayerState.weaponslots[WEAPSLOT_PRIMARY];
 				if ( !occupant || bg_weaponInfo[occupant]->slotStackable ) {
-					break;
+					weapon += step;
+					continue;
 				}
 				occupant = (signed char)cg.predictedPlayerState.weaponslots[WEAPSLOT_PRIMARYB];
 				if ( !occupant || bg_weaponInfo[occupant]->slotStackable ) {
-					break;
+					weapon += step;
+					continue;
 				}
 				weapon += step;
 				continue;
@@ -2496,10 +2500,10 @@ static qboolean CG_SelectFirstWeaponNotInSlot( qboolean next, qboolean checkAmmo
 			case WEAPSLOT_SMOKEGRENADE:
 				occupant = (signed char)cg.predictedPlayerState.weaponslots[weaponInfo->weaponSlot];
 				if ( !occupant || bg_weaponInfo[occupant]->slotStackable ) {
-					break;
+					weapon += step;
+					continue;
 				}
-				weapon += step;
-				continue;
+				break;
 			default:
 				break;
 			}
@@ -2619,11 +2623,11 @@ void CG_CycleWeap( qboolean next, qboolean checkAmmo ) {
 				case WEAPSLOT_PRIMARYB:
 					occupant = (signed char)cg.predictedPlayerState.weaponslots[WEAPSLOT_PRIMARY];
 					if ( !occupant || bg_weaponInfo[occupant]->slotStackable ) {
-						break;
+						continue;
 					}
 					occupant = (signed char)cg.predictedPlayerState.weaponslots[WEAPSLOT_PRIMARYB];
 					if ( !occupant || bg_weaponInfo[occupant]->slotStackable ) {
-						break;
+						continue;
 					}
 					continue;
 				case WEAPSLOT_PISTOL:
@@ -2631,11 +2635,11 @@ void CG_CycleWeap( qboolean next, qboolean checkAmmo ) {
 				case WEAPSLOT_SMOKEGRENADE:
 					occupant = (signed char)cg.predictedPlayerState.weaponslots[weaponInfo->weaponSlot];
 					if ( !occupant || bg_weaponInfo[occupant]->slotStackable ) {
-						break;
+						continue;
 					}
 					continue;
 				default:
-					break;
+					continue;
 				}
 			}
 
@@ -2829,12 +2833,15 @@ void CG_FireWeapon( centity_t *cent, entityState_t *es, int event, int tagIndex 
 
 	if ( sound ) {
 		if ( ( cg.snap->ps.pm_flags & PMF_FIRSTPERSON )
-			 && es->number == cg.snap->ps.clientNum
-			 && cgWeapon->dobj
-			 && CG_DObjGetViewModelTagMatrix( cgWeapon->dobj, "tag_flash", tagMatrix ) ) {
-			origin[0] = tagMatrix[12];
-			origin[1] = tagMatrix[13];
-			origin[2] = tagMatrix[14];
+			 && es->number == cg.snap->ps.clientNum ) {
+			if ( cgWeapon->dobj
+				 && CG_DObjGetViewModelTagMatrix( cgWeapon->dobj, "tag_flash", tagMatrix ) ) {
+				origin[0] = tagMatrix[12];
+				origin[1] = tagMatrix[13];
+				origin[2] = tagMatrix[14];
+			} else {
+				BG_EvaluateTrajectory( &es->pos, cg.time, origin );
+			}
 		} else if ( ( obj = trap_syscall_0xA2( es->number ) ) != 0
 					&& CG_DObjGetWorldTagMatrix( obj, "tag_flash", cent, tagMatrix ) ) {
 			origin[0] = tagMatrix[12];
@@ -2929,7 +2936,7 @@ static void CG_WhizbySound( const vec3_t start, const vec3_t end ) {
 	dist = (float)sqrt( ( point[0] - cg.refdef.vieworg[0] ) * ( point[0] - cg.refdef.vieworg[0] )
 						+ ( point[1] - cg.refdef.vieworg[1] ) * ( point[1] - cg.refdef.vieworg[1] )
 						+ ( point[2] - cg.refdef.vieworg[2] ) * ( point[2] - cg.refdef.vieworg[2] ) );
-	if ( dist >= 140.0f ) {
+	if ( dist > 140.0f ) {
 		return;
 	}
 
@@ -3077,7 +3084,7 @@ static void CG_Tracer( const vec3_t start, const vec3_t end, int forceDraw ) {
 	VectorSubtract( end, start, dir );
 	length = VectorNormalize( dir );
 
-	if ( length <= 100.0f && !forceDraw ) {
+	if ( length < 100.0f && !forceDraw ) {
 		return;
 	}
 

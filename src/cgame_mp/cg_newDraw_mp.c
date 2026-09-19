@@ -1579,7 +1579,9 @@ float CG_GetValue( int ownerDraw, int type ) {
 	switch ( ownerDraw ) {
 	case CG_SELECTEDPLAYER_HEALTH:
 		client = sortedTeamPlayers[CG_GetSelectedPlayer()];
-		if ( bg_clientinfo[client].infoValid ) {
+		/* retail quirk (0x300265ef): health only when info is INVALID, -1 when
+		   valid -- inverted vs CG_PLAYER_HEALTH below. Reproduced faithfully. */
+		if ( !bg_clientinfo[client].infoValid ) {
 			return (float)bg_clientinfo[client].health;
 		}
 		break;
