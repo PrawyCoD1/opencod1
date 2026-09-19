@@ -408,7 +408,8 @@ void PM_StepSlideMove( qboolean gravity ) {
 		}
 		if ( trace.fraction < 1.0f ) {
 			VectorCopy( trace.endpos, pm->ps->origin );
-			PM_ClipVelocity( pm->ps->velocity, trace.normal, pm->ps->velocity, OVERCLIP );
+			/* Stock cgame call 0x3000D82B, returning to 0x3000D830. */
+			PM_Bounce( pm->ps->velocity, trace.normal, pm->ps->velocity );
 		} else if ( stepUp != 0 ) {
 			pm->ps->origin[2] -= stepUp;
 		}

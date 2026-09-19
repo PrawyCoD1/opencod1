@@ -30,6 +30,7 @@ extern int CIN_PlayCinematic();
 extern int CIN_RunCinematic( int handle );
 extern void CIN_SetExtents( int handle, int x, int y, int w, int h );
 extern int CIN_StopCinematic();
+extern void CL_SortGlobalServers( void );
 extern int CL_GetAutoUpdate();
 extern int CL_GetPing();
 extern int CL_GetPingQueueCount();
@@ -103,6 +104,7 @@ void LAN_LoadCachedServers()
       cls_numGlobalServerAddresses = 0;
     }
     FS_FCloseFile(v0);
+    CL_SortGlobalServers();
   }
 }
 
@@ -230,6 +232,8 @@ int __cdecl LAN_AddServer(int a1, char *Source, char *s)
   v8[31] = 0;
   result = 1;
   *(_DWORD *)&v15[184 * (*v4)++ + 172] = 1;
+  if ( a1 == 1 )
+    CL_SortGlobalServers();
   return result;
 }
 
@@ -321,12 +325,28 @@ char *__cdecl LAN_GetServerAddressString(
   return result;
 }
 
+/* Display policy: retain printable ASCII (including color codes), removing
+ * control/high bytes before the hostname buffer is truncated. */
+void LAN_CopyDisplayHostname( char *dest, int size, const char *source ) {
+  int used = 0;
+  unsigned char c;
+  if ( size <= 0 )
+    return;
+  while ( *source && used < size - 1 ) {
+    c = (unsigned char)*source++;
+    if ( c >= 32 && c <= 126 )
+      dest[used++] = (char)c;
+  }
+  dest[used] = 0;
+}
+
 /* ---- LAN_GetServerInfo  0x00417A10 ----  [HIGH] */
 char *__cdecl LAN_GetServerInfo(char *buf, char *source, unsigned int n, int buflen)
 {
   char *v5;
   netadr_t adr;
   char Source[1024];
+  char hostname[MAX_NAME_LENGTH];
 
   Source[0] = 0;
   if ( source == (char *)1 )
@@ -356,7 +376,9 @@ char *__cdecl LAN_GetServerInfo(char *buf, char *source, unsigned int n, int buf
     if ( buf )
     {
       *buf = 0;
-      Info_SetValueForKey(Source, "hostname", v5 + 0x14);
+      /* Cached/favorite entries can predate hostname filtering. */
+      LAN_CopyDisplayHostname(hostname, sizeof(hostname), v5 + 0x14);
+      Info_SetValueForKey(Source, "hostname", hostname);
       Info_SetValueForKey(Source, "mapname", v5 + 0x34);
       Info_SetValueForKey(Source, "clients", va("%i", *(int *)(v5 + 0x98)));
       Info_SetValueForKey(Source, "sv_maxclients", va("%i", *(int *)(v5 + 0x9C)));
@@ -406,6 +428,29 @@ char *__cdecl LAN_GetServerPtr(unsigned int a1, int a2)
   return 0;
 }
 
+/* CoD 1.5 LAN_CleanHostname / LAN_CompareHostname, 0x0011C0E0 / 0x0011C040.
+ * The decompiled locale-table mask 1 is isalpha, not isalnum. */
+static void LAN_CleanHostname( const char *name, char *clean ) {
+  while ( *name ) {
+    if ( isalpha((unsigned char)*name) )
+      *clean++ = *name;
+    name++;
+  }
+  *clean = 0;
+}
+
+static int LAN_CompareHostname( const char *a, const char *b ) {
+  char displayA[MAX_NAME_LENGTH], displayB[MAX_NAME_LENGTH];
+  char cleanA[MAX_NAME_LENGTH], cleanB[MAX_NAME_LENGTH];
+  int result;
+  LAN_CopyDisplayHostname(displayA, sizeof(displayA), a);
+  LAN_CopyDisplayHostname(displayB, sizeof(displayB), b);
+  LAN_CleanHostname(displayA, cleanA);
+  LAN_CleanHostname(displayB, cleanB);
+  result = Q_stricmp(cleanA, cleanB);
+  return result ? result : Q_stricmp(displayA, displayB);
+}
+
 /* ---- LAN_CompareServers  0x00417D40 ----  [HIGH] */
 int __cdecl LAN_CompareServers(unsigned int a1, int a2, int a3, int a4, unsigned int a5)
 {
@@ -434,7 +479,7 @@ int __cdecl LAN_CompareServers(unsigned int a1, int a2, int a3, int a4, unsigned
         result = 2 * (v9 != 0) - 1;
       break;
     case 1:
-      result = Q_stricmp(v7 + 20, (const char *)(v6 + 20));
+      result = LAN_CompareHostname(v7 + 20, (const char *)(v6 + 20));
       break;
     case 2:
       result = Q_stricmp(v7 + 52, (const char *)(v6 + 52));

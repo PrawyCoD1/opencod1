@@ -214,8 +214,9 @@ static int fs_numServerReferencedPaks;
 static int fs_serverReferencedPaks[MAX_SEARCH_PATHS];
 static char *fs_serverReferencedPakNames[MAX_SEARCH_PATHS];
 
-static int fs_checksumFeed;
-static int fs_fakeChkSum;
+/* fs_checksumFeed and fs_fakeChkSum are owned by universal/com_files.c.
+ * Use the shared declarations in files_local.h: a private seed here makes
+ * pure reports XOR against zero instead of the server's checksum feed. */
 
 extern char *fs_serverPakNames[];
 
@@ -911,6 +912,47 @@ const char *FS_ReferencedPakNames( void ) {
 	}
 
 	return fs_referencedPakNames;
+}
+
+/* Diagnose before Com_Error clears the server's pure list.  Compare archive
+ * checksums, not filenames; renamed copies of an allowed PK3 are still valid. */
+int FS_ListUnapprovedReferencedPaks( char *buffer, int size ) {
+	searchpath_t *search;
+	int count = 0;
+	qboolean truncated = qfalse;
+	char name[2 * MAX_OSPATH + 8];
+
+	if ( size <= 0 ) {
+		return 0;
+	}
+	buffer[0] = '\0';
+	if ( !fs_numServerPaks ) {
+		return 0;
+	}
+	for ( search = fs_searchpaths ; search ; search = search->next ) {
+		if ( !search->pack || search->localized
+			 || !( search->pack->referenced & 0x00FFFFFF )
+			 || FS_PakIsPure( search->pack ) ) {
+			continue;
+		}
+		count++;
+		Com_sprintf( name, sizeof( name ), "%s/%s.pk3",
+			search->pack->pakGamename, search->pack->pakBasename );
+		Com_Printf( "Unapproved referenced PK3: %s\n", name );
+		/* Keep complete filenames and reserve room for the overflow notice. */
+		if ( !truncated && strlen( buffer ) + strlen( name ) + 48 < (unsigned)size ) {
+			if ( buffer[0] ) {
+				Q_strcat( buffer, size, ", " );
+			}
+			Q_strcat( buffer, size, name );
+		} else {
+			truncated = qtrue;
+		}
+	}
+	if ( truncated ) {
+		Q_strcat( buffer, size, " ... (full list in console)" );
+	}
+	return count;
 }
 
 /* ---- FS_ReferencedPakPureChecksums  0x0043C050 ---- VERIFIED */

@@ -3057,7 +3057,7 @@ unsigned char snd_subtitleBuf[1032];
 unsigned char snd_subtitleStr[64];
 void *snd_tempBuildHead;
 int sourceFiles[64];
-unsigned char stru_143A9B0[1536];
+/* Command history storage is owned by client_mp/cl_input_mp.c. */
 unsigned char cls_authorizeServer[20];
 unsigned char stru_5700E8[576];
 unsigned char stru_57A248[72];

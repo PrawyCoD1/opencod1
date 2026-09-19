@@ -169,6 +169,7 @@ typedef struct netadr_t
 	unsigned short port;
 } netadr_t;
 COD1_ASSERT_SIZE( netadr_t, 20 );
+int NET_CompareAdrSigned( const netadr_t *a, const netadr_t *b );
 
 /* CoD: RTCW's msg_t leads with allowoverflow and carries an oob flag; 1.1 has
  * neither.  Out-of-band is tracked by the caller instead. */
@@ -614,6 +615,7 @@ int FS_SV_FOpenFileRead( const char *filename, fileHandle_t *fp );
 void FS_SV_Rename( const char *from, const char *to );
 
 void FS_PureServerSetLoadedPaks( const char *pakSums, const char *pakNames );
+int FS_ListUnapprovedReferencedPaks( char *buffer, int size );
 void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames );
 void FS_ShutdownServerPakNames( void );
 void FS_ShutdownServerReferencedPaks( void );

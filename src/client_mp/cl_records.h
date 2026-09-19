@@ -38,9 +38,7 @@
 #define MAX_ENTITIES_IN_SNAPSHOT  0x100
 #define MAX_CLIENTS_IN_SNAPSHOT   0x40
 
-#define UCMD_SIZE               24
-#define CMD_BACKUP              64
-#define CMD_MASK                0x3F
+#include "../qcommon/cmd_history.h"
 
 #define GS_STRINGOFFSETS        0x0000
 #define GS_STRINGDATA           0x2000

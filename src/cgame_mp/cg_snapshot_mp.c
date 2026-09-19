@@ -483,7 +483,8 @@ void CG_ProcessSnapshots( void ) {
 	if ( n != cg.latestSnapshotNum ) {
 		if ( n < cg.latestSnapshotNum ) {
 			// this should never happen
-			CG_Error( "CG_ProcessSnapshots: n < cg.latestSnapshotNum" );
+			CG_Error( "CG_ProcessSnapshots: snapshot went backwards (%i < %i), processed %i, time %i",
+			          n, cg.latestSnapshotNum, cgs.processedSnapshotNum, cg.latestSnapshotTime );
 		}
 		cg.latestSnapshotNum = n;
 	}

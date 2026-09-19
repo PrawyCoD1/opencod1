@@ -116,9 +116,6 @@ int         GetKeyBindingLocalizedString( const char *name, char **out );
 #ifndef STAT_MINUS
 #define STAT_MINUS      10          /* num frame for '-' (0x3001464F) */
 #endif
-#ifndef CMD_BACKUP
-#define CMD_BACKUP      64          /* CG_DrawDisconnect's `sub eax, 3Fh` */
-#endif
 #ifndef SNAPFLAG_RATE_DELAYED
 #define SNAPFLAG_RATE_DELAYED   1
 #endif

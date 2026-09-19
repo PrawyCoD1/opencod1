@@ -520,7 +520,7 @@ void CL_ParseSnapshot( msg_t *msg )
 		Com_Printf( "   snapshot:%i  delta:%i  ping:%i\n",
 		            *(int *)cl_snap_messageNum, cl_snap_deltaNum, cl_snap_ping );
 	}
-
+	
 	cl_newSnapshots = qtrue;
 }
 
@@ -532,6 +532,7 @@ void CL_SystemInfoChanged( void )
 	char        key[8192];
 	char        value[8192];
 	cvar_t     *var;
+	qboolean    gameDirSeen = qfalse;
 
 	systemInfo = &cl_gameState_stringData[ cl_gameState_stringOffsets[1] ];
 
@@ -563,7 +564,16 @@ void CL_SystemInfoChanged( void )
 			if ( !key[0] ) {
 				break;
 			}
+			if ( !Q_stricmp( key, "fs_game" ) ) {
+				gameDirSeen = qtrue;
+			}
 			Cvar_Set2( key, value, qtrue );
+		}
+		/* Empty cvars are omitted from systeminfo. A server without fs_game
+		 * uses main, not the mod selected locally before connecting.
+		 * CL_ParseGamestate restarts the filesystem when this changes it. */
+		if ( !gameDirSeen ) {
+			Cvar_Set2( "fs_game", "", qtrue );
 		}
 	}
 

@@ -25,6 +25,7 @@
 #define __CG_LOCAL_H__
 
 #include "../universal/q_shared.h"
+#include "../qcommon/cmd_history.h"
 #include "../game_mp/bg_public.h"
 
 #define CG_ASSERT_SIZE( type, bytes )   COD1_ASSERT_SIZE( type, bytes )

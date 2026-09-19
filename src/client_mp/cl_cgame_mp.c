@@ -119,7 +119,7 @@ extern int cl_parseEntitiesNum;   /* 0x0143A940, 4 bytes */
 extern char cl_snap_messageNum[4];   /* 0x01432970, 4 bytes */
 extern int cl_snap_serverTime;   /* 0x0143296C, 4 bytes */
 extern int cl_snapshots[67584];   /* 0x0143B134, 270336 bytes */
-extern unsigned char stru_143A9B0[1536];   /* 0x0143A9B0, 1536 bytes */
+extern unsigned char stru_143A9B0[UCMD_SIZE * CMD_BACKUP];
 
 extern int CIN_DrawCinematic();
 extern int CIN_PlayCinematic();
@@ -430,6 +430,7 @@ void CL_ConfigstringModified( void )
 	int         i;
 	int         len;
 	byte        oldGameState[GS_SIZE];
+	int         snapshotBefore = *(int *)cl_snap_messageNum;
 
 	index = j__atol( Cmd_Argv( 1 ) );
 	if ( index < 0 || index >= MAX_CONFIGSTRINGS ) {
@@ -474,6 +475,10 @@ void CL_ConfigstringModified( void )
 
 	if ( index == CS_SYSTEMINFO ) {
 		CL_SystemInfoChanged();
+	}
+	if ( *(int *)cl_snap_messageNum != snapshotBefore ) {
+		Com_Printf( "Configstring %i changed snapshot number: %i -> %i\n",
+		            index, snapshotBefore, *(int *)cl_snap_messageNum );
 	}
 }
 
@@ -532,6 +537,16 @@ rescan:
 
 	case 'w':
 		if ( Cmd_Argc() >= 2 ) {
+			if ( !strcmp( Cmd_Argv( 1 ), "EXE_UNPURECLIENTDETECTED" ) ) {
+				char paks[1024];
+				int count = FS_ListUnapprovedReferencedPaks( paks, sizeof( paks ) );
+				Com_Error( ERR_SERVERDISCONNECT, "%s\n\n%s%s",
+					va( SEH_SafeTranslateString( "EXE_SERVERDISCONNECTREASON" ),
+						SEH_SafeTranslateString( "EXE_UNPURECLIENTDETECTED" ) ),
+					count ? "PK3s not allowed by this server: " :
+						"No specific PK3 could be identified from the server's allowed list.",
+					count ? paks : "" );
+			}
 			Com_Error( ERR_SERVERDISCONNECT,
 			           va( SEH_SafeTranslateString( "EXE_SERVERDISCONNECTREASON" ),
 			               SEH_SafeTranslateString( Cmd_Argv( 1 ) ) ) );
@@ -541,7 +556,10 @@ rescan:
 		return qtrue;
 
 	case 'x':
-		Com_sprintf( byte_57C910, 0x2000, "d %s \"%s",
+		/* Configstring chunks use a raw remainder, including spaces. Match
+		 * the short 'd' command format; synthetic quotes corrupt systeminfo. */
+		Cmd_TokenizeString2( s, 3 );
+		Com_sprintf( byte_57C910, 0x2000, "d %s %s",
 		             Cmd_Argv( 1 ), Cmd_Argv( 2 ) );
 		return qfalse;
 
@@ -557,11 +575,10 @@ rescan:
 	case 'z':
 		Cmd_TokenizeString2( s, 3 );
 		arg = Cmd_Argv( 2 );
-		if ( strlen( byte_57C910 ) + strlen( arg ) + 1 >= 0x2000 ) {
+		if ( strlen( byte_57C910 ) + strlen( arg ) >= 0x2000 ) {
 			Com_Error( ERR_DROP, "\x15" "bcs exceeded BIG_INFO_STRING" );
 		}
 		strcat( byte_57C910, arg );
-		strcat( byte_57C910, Source );      /* a lone quote, 0x005682F8 */
 		s = byte_57C910;
 		goto rescan;
 

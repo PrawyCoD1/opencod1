@@ -1,10 +1,13 @@
 #ifndef CL_VM_H
 #define CL_VM_H
 
+void LAN_CopyDisplayHostname( char *dest, int size, const char *source );
+
 /* connstate_t, coduo client/cgame.h:630-640.  CL_KeyEvent and Console_Key
  * compare cls_state against CA_CINEMATIC (7) and CA_LOGO (8); coduo
  * cinematic.c:250-251 is the same three-way state test. */
 #define CA_DISCONNECTED     0
+#define CA_CONNECTING       1
 #define CA_CONNECTED        3
 #define CA_ACTIVE           6
 #define CA_CINEMATIC        7

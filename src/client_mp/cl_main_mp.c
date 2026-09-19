@@ -7,6 +7,7 @@
 #include "../qcommon/cod1_globals.h"
 #include "cl_records.h"
 #include "cl_vm.h"
+#include "cl_discord.h"
 
 extern void CL_ParseServerMessage( msg_t *msg );
 extern void MSS_StopSounds( int flags );        /* 0x0044FA40 */
@@ -657,7 +658,7 @@ void CL_ClearState( void )
 	Com_Memset( &cl_viewanglesYaw, 0, 4 );                       /* 0x0143A9A4 */
 	Com_Memset( &cl_viewanglesRoll, 0, 4 );                         /* 0x0143A9A8 */
 	Com_Memset( &cl_serverId, 0, 4 );                       /* 0x0143A9AC */
-	Com_Memset( stru_143A9B0, 0, 1536 );                      /* 0x0143A9B0 */
+	Com_Memset( stru_143A9B0, 0, sizeof( stru_143A9B0 ) );                      /* 0x0143A9B0 */
 	Com_Memset( &cl_cmdNumber, 0, 4 );                        /* 0x0143AFB0 */
 	Com_Memset( dword_143AFB4, 0, 384 );                      /* 0x0143AFB4 */
 	Com_Memset( dword_143AFB8, 0, 380 );                      /* 0x0143AFB8 */
@@ -1222,7 +1223,9 @@ void __cdecl CL_Vid_Restart_f( void )
 	CL_ShutdownRef();
 
 	CL_ResetPureClientAtServer();
-	FS_ClearPakReferences( 0 );
+	/* 1.5 preserves general asset references across renderer restarts;
+	 * only the UI/cgame DLL references are rebuilt. */
+	FS_ClearPakReferences( 1 );
 
 	CL_ShutdownCGame();
 	CL_ShutdownUI();
@@ -1575,8 +1578,6 @@ void CL_InitDownloads( void ) {
 		}
 	} else if ( FS_ComparePaks( (char *)clc_downloadList,
 								sizeof( clc_downloadList ), qtrue ) ) {
-		Com_Printf( "Need paks: %s\n", clc_downloadList );
-
 		if ( *clc_downloadList ) {
 			cls_state = CA_CONNECTED;
 			CL_NextDownload();
@@ -1707,9 +1708,45 @@ void CL_InitServerInfo( serverInfo_t *server, serverAddress_t *address ) {
 	server->allowAnonymous = 0;
 }
 
+/* CoD 1.5: CL_FindServerInfo (0x001133E0 in Call of Duty MP.c). */
+static qboolean CL_FindServerInfo( serverAddress_t *address ) {
+	int low = 0, high = cls_numglobalservers, mid, cmp;
+	netadr_t adr = { 0 };
+	adr.type = NA_IP;
+	memcpy( adr.ip, address->ip, sizeof( adr.ip ) );
+	adr.port = address->port;
+	while ( low < high ) {
+		mid = ( low + high ) / 2;
+		cmp = NET_CompareAdrSigned( &adr, &cls_globalServers[mid].adr );
+		if ( cmp < 0 ) {
+			high = mid;
+		} else if ( cmp > 0 ) {
+			low = mid + 1;
+		} else {
+			while ( mid > 0 && !NET_CompareAdrSigned( &adr, &cls_globalServers[mid - 1].adr ) ) {
+				mid--;
+			}
+			do {
+				CL_InitServerInfo( &cls_globalServers[mid++], address );
+			} while ( mid < cls_numglobalservers && !NET_CompareAdrSigned( &adr, &cls_globalServers[mid].adr ) );
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+/* CoD 1.5: CL_CompareAdrSigned / CL_SortGlobalServers (0x00113520). */
+static int __cdecl CL_CompareAdrSigned( const void *a, const void *b ) {
+	return NET_CompareAdrSigned( &((const serverInfo_t *)a)->adr, &((const serverInfo_t *)b)->adr );
+}
+
+void CL_SortGlobalServers( void ) {
+	qsort( cls_globalServers, cls_numglobalservers, sizeof( serverInfo_t ), CL_CompareAdrSigned );
+}
+
 /* ---- CL_ServersResponsePacket  0x004107B0 ---- */
 void CL_ServersResponsePacket( netadr_t from, msg_t *msg ) {
-	int i, count, total;
+	int i, count;
 	serverAddress_t addresses[MAX_SERVERSPERPACKET];
 	int numservers;
 	byte *buffptr;
@@ -1768,27 +1805,15 @@ void CL_ServersResponsePacket( netadr_t from, msg_t *msg ) {
 
 	count = cls_numglobalservers;
 
+	/* 1.5 searches the previously sorted list, then sorts after the packet. */
 	for ( i = 0; i < numservers && count < MAX_GLOBAL_SERVERS; i++ ) {
-		serverInfo_t *server = &cls_globalServers[count];
-
-		CL_InitServerInfo( server, &addresses[i] );
-		count++;
+		if ( !CL_FindServerInfo( &addresses[i] ) ) {
+			CL_InitServerInfo( &cls_globalServers[count++], &addresses[i] );
+		}
 	}
-
-	if ( cls_numGlobalServerAddresses < MAX_GLOBAL_SERVERS && i < numservers ) {
-		do {
-			if ( count < MAX_GLOBAL_SERVERS ) {
-				break;
-			}
-			cls_globalServerAddresses[cls_numGlobalServerAddresses++] = addresses[i];
-			i++;
-		} while ( i < numservers );
-	}
-
 	cls_numglobalservers = count;
-	total = count + cls_numGlobalServerAddresses;
-
-	Com_Printf( "%d servers parsed (total %d)\n", numservers, total );
+	CL_SortGlobalServers();
+	Com_Printf( "%d servers parsed (total %d)\n", numservers, count );
 }
 
 /* ---- CL_ConnectionlessPacket  0x004109D0 ----  [HIGH] */
@@ -2520,7 +2545,7 @@ void CL_SetServerInfo( serverInfo_t *server, const char *info, int ping ) {
 	if ( server ) {
 		if ( info ) {
 			server->clients = atoi( Info_ValueForKey( info, "clients" ) );
-			Q_strncpyz( server->hostName, Info_ValueForKey( info, "hostname" ), MAX_NAME_LENGTH );
+			LAN_CopyDisplayHostname( server->hostName, sizeof( server->hostName ), Info_ValueForKey( info, "hostname" ) );
 			Q_strncpyz( server->mapName, Info_ValueForKey( info, "mapname" ), MAX_NAME_LENGTH );
 			server->maxClients = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
 			Q_strncpyz( server->game, Info_ValueForKey( info, "game" ), MAX_NAME_LENGTH );
@@ -3345,15 +3370,6 @@ qboolean CL_UpdateVisiblePings_f( int source ) {
 						slots++;
 					}
 				}
-				else if ( server[i].ping == 0 ) {
-					if ( source == AS_GLOBAL ) {
-						if ( cls_numGlobalServerAddresses > 0 ) {
-							cls_numGlobalServerAddresses--;
-							CL_InitServerInfo( &server[i],
-								&cls_globalServerAddresses[cls_numGlobalServerAddresses] );
-						}
-					}
-				}
 			}
 		}
 	}
@@ -3460,7 +3476,9 @@ qboolean __cdecl CL_CDKeyValidate( const char *key, const char *checksum )
 	if ( !checksum ) {
 		return qtrue;
 	}
-	return Q_stricmpn( checksum, buffer, 99999 ) == 0 ? qtrue : qfalse;
+	/* CoD 1.5 compares only this key's four checksum characters. fs_game
+	 * appends the mod checksum at +4, replacing the base slot's terminator. */
+	return Q_stricmpn( checksum, buffer, 4 ) == 0 ? qtrue : qfalse;
 }
 
 /* ---- CL_SetupForNewServerMap  0x004142F0 ----  VERIFIED */
@@ -3843,6 +3861,7 @@ void CL_Frame( int msec ) {
 	CL_CheckForResend();
 	CL_SetCGameTime();
 	CL_UpdateInGameState();
+	CL_DiscordFrame();
 
 	SCR_UpdateScreen();
 
@@ -3992,6 +4011,8 @@ void CL_Init( void ) {
 	SCR_Init();
 
 	Cvar_Set2( "cl_running", "1", qtrue );
+	CL_DiscordInit();
+	Cvar_Get( "g_bounce", "0", CVAR_ARCHIVE );
 
 	Com_Printf( "----- Client Initialization Complete -----\n" );
 }
@@ -4007,6 +4028,7 @@ void CL_Shutdown( void ) {
 		return;
 	}
 	recursive = 1;
+	CL_DiscordShutdown();
 
 	/* 0x00412826: retail disconnects the client before tearing it down -- push 1;
 	 * call CL_Disconnect, right after CL_ShutdownDebugData and before

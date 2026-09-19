@@ -455,7 +455,9 @@ void SCR_Init( void ) {
 static void SCR_DrawScreenField( int stereoFrame ) {
 	re_BeginFrame( stereoFrame );
 
-	if ( cls_state != CA_ACTIVE ) {
+	/* Cgame draws the levelshot during asset registration. The retail
+	 * 0x00416E36 full-screen clear can cover it on loading-screen updates. */
+	if ( cls_state != CA_ACTIVE && cls_state != CA_LOADING && cls_state != CA_PRIMED ) {
 		if ( cls_glconfig_vidWidth * 480 > cls_glconfig_vidHeight * 640 ) {
 			re_SetColor( g_color_table[0] );
 			re_DrawStretchPic( 0.0f, 0.0f,
