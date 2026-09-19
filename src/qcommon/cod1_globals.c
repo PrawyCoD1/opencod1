@@ -464,6 +464,7 @@ cvar_t *cl_mouseAccel;
 int cl_newSnapshots;
 cvar_t *cl_nodelta;
 cvar_t *cl_noprint;
+cvar_t *cl_whitetext;
 int cl_oldServerTime;
 cvar_t *cl_packetdup;
 int cl_parseClientsNum;

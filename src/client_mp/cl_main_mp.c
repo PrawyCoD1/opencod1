@@ -3933,6 +3933,9 @@ void CL_Init( void ) {
 	m_filter = Cvar_Get( "m_filter", "0", CVAR_ARCHIVE );
 	cl_motdString = Cvar_Get( "cl_motdString", "", CVAR_ROM );
 	cl_ingame = Cvar_Get( "cl_ingame", "0", CVAR_ROM );
+	//New functions
+	cl_whitetext = Cvar_Get( "cl_whitetext", "1", 0 );
+
 	Cvar_Get( "cl_maxPing", "800", CVAR_ARCHIVE );
 
 	Cvar_Get( "cg_drawCompass", "1", CVAR_ARCHIVE );
