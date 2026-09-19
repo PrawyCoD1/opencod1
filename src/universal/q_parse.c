@@ -350,7 +350,7 @@ char *Com_ParseExt( char **data_p, qboolean allowLineBreaks ) {
 			if ( *data == '\n' ) {
 				parseInfo->currentLine++;
 			}
-			if ( len < MAX_TOKEN_CHARS ) {
+			if ( len < MAX_TOKEN_CHARS - 1 ) {
 				parseInfo->token[len] = c;
 				len++;
 			}
@@ -366,7 +366,7 @@ char *Com_ParseExt( char **data_p, qboolean allowLineBreaks ) {
 	if ( parseInfo->spaceDelimited ) {
 		do
 		{
-			if ( len < MAX_TOKEN_CHARS ) {
+			if ( len < MAX_TOKEN_CHARS - 1 ) {
 				parseInfo->token[len] = c;
 				len++;
 			}
@@ -386,7 +386,7 @@ char *Com_ParseExt( char **data_p, qboolean allowLineBreaks ) {
 		 ( parseInfo->parseNegativeNumbers && c == '-' && data[1] >= '0' && data[1] <= '9' ) ||
 		 ( c == '.' && data[1] >= '0' && data[1] <= '9' ) ) {
 		do {
-			if ( len < MAX_TOKEN_CHARS ) {
+			if ( len < MAX_TOKEN_CHARS - 1 ) {
 				parseInfo->token[len] = c;
 				len++;
 			}
@@ -395,14 +395,14 @@ char *Com_ParseExt( char **data_p, qboolean allowLineBreaks ) {
 		} while ( ( c >= '0' && c <= '9' ) || c == '.' );
 
 		if ( c == 'e' || c == 'E' ) {
-			if ( len < MAX_TOKEN_CHARS ) {
+			if ( len < MAX_TOKEN_CHARS - 1 ) {
 				parseInfo->token[len] = c;
 				len++;
 			}
 			data++;
 			c = *data;
 			if ( c == '-' || c == '+' ) {
-				if ( len < MAX_TOKEN_CHARS ) {
+				if ( len < MAX_TOKEN_CHARS - 1 ) {
 					parseInfo->token[len] = c;
 					len++;
 				}
@@ -410,7 +410,7 @@ char *Com_ParseExt( char **data_p, qboolean allowLineBreaks ) {
 				c = *data;
 			}
 			while ( c >= '0' && c <= '9' ) {
-				if ( len < MAX_TOKEN_CHARS ) {
+				if ( len < MAX_TOKEN_CHARS - 1 ) {
 					parseInfo->token[len] = c;
 					len++;
 				}
@@ -421,7 +421,7 @@ char *Com_ParseExt( char **data_p, qboolean allowLineBreaks ) {
 	} else if ( ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) ||
 				c == '_' || c == '/' || c == '\\' ) {
 		do {
-			if ( len < MAX_TOKEN_CHARS ) {
+			if ( len < MAX_TOKEN_CHARS - 1 ) {
 				parseInfo->token[len] = c;
 				len++;
 			}

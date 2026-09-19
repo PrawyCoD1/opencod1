@@ -456,7 +456,7 @@ char *Q_CleanStr( char *string ) {
 	s = string;
 	d = string;
 	while ( ( c = *s ) != 0 ) {
-		if ( Q_IsColorString( s ) ) {
+		if ( s[0] == '^' && s[1] && s[1] != '^' && s[1] >= '0' && s[1] <= '7' ) {
 			s++;
 		} else if ( c >= 0x20 && c <= 0x7E )   {
 			*d++ = c;
@@ -485,7 +485,7 @@ int QDECL Com_sprintf( char *dest, int size, const char *fmt, ... ) {
 	va_list argptr;
 
 	va_start( argptr,fmt );
-	len = Q_vsnprintf( dest, size, fmt, argptr );
+	len = _vsnprintf( dest, size, fmt, argptr );
 	va_end( argptr );
 
 	dest[size - 1] = 0;
@@ -612,7 +612,7 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 		}
 		*o = 0;
 
-		if ( !Q_stricmp( key, pkey ) ) {
+		if ( !Q_stricmp( pkey, key ) ) {
 			return value[valueindex];
 		}
 

@@ -520,14 +520,17 @@ void CG_SetShellShockParmsFromCvars( shellshockParms_t *parmsIn ) {
 	parms->soundFadeInTime = SHOCK_MSEC( cg_shock_soundFadeInTime );
 	parms->soundFadeOutTime = SHOCK_MSEC( cg_shock_soundFadeOutTime );
 	parms->soundLoopFadeTime = SHOCK_MSEC( cg_shock_soundLoopFadeTime );
-	parms->soundLoopEndDelay = SHOCK_MSEC( cg_shock_soundLoopEndDelay );
+	/* NOT clamped to >=1 like the other *Time fields (retail 0x3002ED94 stores
+	   the raw Q_ftol); cg_shock_soundLoopEndDelay defaults to "-3.0" -> -3000. */
+	parms->soundLoopEndDelay = Q_ftol( cg_shock_soundLoopEndDelay.value * 1000.0f );
 
 	strncpy( parms->soundRoomType, cg_shock_soundRoomType.string,
 			 sizeof( parms->soundRoomType ) - 1 );
 	parms->soundRoomType[sizeof( parms->soundRoomType ) - 1] = 0;
 
 	parms->soundWetLevel = Com_Clamp( 0.0f, 1.0f, cg_shock_soundWetLevel.value );
-	parms->soundModEndDelay = SHOCK_MSEC( cg_shock_soundModEndDelay );
+	/* likewise unclamped (retail 0x3002EE29 stores the raw Q_ftol). */
+	parms->soundModEndDelay = Q_ftol( cg_shock_soundModEndDelay.value * 1000.0f );
 
 	parms->soundVolume[SND_CHANNEL_AUTO] = Com_Clamp( 0.0f, 1.0f, cg_shock_volume_auto.value );
 	parms->soundVolume[SND_CHANNEL_MENU] = Com_Clamp( 0.0f, 1.0f, cg_shock_volume_menu.value );

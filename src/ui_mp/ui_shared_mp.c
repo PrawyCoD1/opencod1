@@ -962,7 +962,7 @@ itemDef_t *Menu_FindItemByName( menuDef_t *menu, const char *p ) {
 	}
 
 	for ( i = 0; i < menu->itemCount; i++ ) {
-		if ( Q_stricmp( p, menu->items[i]->window.name ) == 0 ) {
+		if ( Q_stricmp( menu->items[i]->window.name, p ) == 0 ) {
 			return menu->items[i];
 		}
 	}
@@ -1541,12 +1541,12 @@ qboolean Item_EnableShowViaCvar( itemDef_t *item, int flag ) {
 
 			// enable it if any of the values are true
 			if ( item->cvarFlags & flag ) {
-				if ( Q_stricmp( buff, val ) == 0 ) {
+				if ( Q_stricmp( val, buff ) == 0 ) {
 					return qtrue;
 				}
 			} else {
 				// disable it if any of the values are true
-				if ( Q_stricmp( buff, val ) == 0 ) {
+				if ( Q_stricmp( val, buff ) == 0 ) {
 					return qfalse;
 				}
 			}
@@ -2182,7 +2182,7 @@ int Item_Multi_FindCvarByValue( itemDef_t *item ) {
 		}
 		for ( i = 0; i < multiPtr->count; i++ ) {
 			if ( multiPtr->strDef ) {
-				if ( Q_stricmp( buff, multiPtr->cvarStr[i] ) == 0 ) {
+				if ( Q_stricmp( multiPtr->cvarStr[i], buff ) == 0 ) {
 					return i;
 				}
 			} else {
@@ -3167,22 +3167,25 @@ void Item_Text_Wrapped_Paint( itemDef_t *item, const char *text, vec4_t color ) 
 	while ( p && *p ) {
 		strncpy( text2, start, p - start + 1 );
 		text2[p - start] = '\0';
-		x = item->textRect.x;
 		if ( item->textalignment == ITEM_ALIGN_CENTER ) {
 			x = item->textRect.x + ( item->textRect.w - DC->textWidth( text2, item->font, item->textscale, 0 ) ) * 0.5f;
 		} else if ( item->textalignment == ITEM_ALIGN_RIGHT ) {
 			x = item->textRect.x + item->textRect.w - DC->textWidth( text2, item->font, item->textscale, 0 );
+		} else {
+			x = item->textRect.x;
 		}
 		DC->drawText( x, y, item->font, item->textscale, color, text2, 0, 0, item->textStyle );
 		y += height + 5;
 		start += p - start + 1;
 		p = strchr( p + 1, '\r' );
 	}
-	x = item->textRect.x;
+	
 	if ( item->textalignment == ITEM_ALIGN_CENTER ) {
 		x = item->textRect.x + ( item->textRect.w - DC->textWidth( start, item->font, item->textscale, 0 ) ) * 0.5f;
 	} else if ( item->textalignment == ITEM_ALIGN_RIGHT ) {
 		x = item->textRect.x + item->textRect.w - DC->textWidth( start, item->font, item->textscale, 0 );
+	} else {
+		x = item->textRect.x;
 	}
 	DC->drawText( x, y, item->font, item->textscale, color, start, 0, 0, item->textStyle );
 }
@@ -3403,7 +3406,7 @@ void Controls_GetKeyAssignment( char *command, int *twokeys ) {
 		if ( *b == 0 ) {
 			continue;
 		}
-		if ( !Q_stricmp( b, command ) ) {
+		if ( !Q_stricmp( command, b ) ) {
 			twokeys[count] = j;
 			count++;
 			if ( count == 2 ) {
@@ -3816,12 +3819,7 @@ void Item_Model_Paint( itemDef_t *item ) {
 
 	origin[2] = -0.5f * ( mins[2] + maxs[2] );
 	origin[1] = 0.5f * ( mins[1] + maxs[1] );
-
-	// calculate distance so the model nearly fills the box
-	{
-		float len = 0.5f * ( maxs[2] - mins[2] );
-		origin[0] = len / 0.268f;    // len / tan( fov/2 )
-	}
+	origin[0] = ( maxs[2] - mins[2] ) * 0.5f * 3.7313433f;    // *(1/0.268f) -- CoD precomputed reciprocal of tan( fov/2 )
 
 	refdef.fov_x = ( modelPtr->fov_x ) ? modelPtr->fov_x : w;
 	refdef.fov_y = ( modelPtr->fov_y ) ? modelPtr->fov_y : h;
@@ -3845,7 +3843,7 @@ void Item_Model_Paint( itemDef_t *item ) {
 	AnglesToAxis( angles, ent.axis );
 
 	if ( modelPtr->frameTime ) {  // don't advance on the first frame
-		modelPtr->backlerp += ( ( ( DC->realTime - modelPtr->frameTime ) / 1000.0f ) * (float)modelPtr->fps );
+		modelPtr->backlerp += ( ( DC->realTime - modelPtr->frameTime ) * 0.001f ) * modelPtr->fps;
 	}
 
 	if ( modelPtr->backlerp > 1 ) {
@@ -4244,7 +4242,7 @@ void Item_Paint( itemDef_t *item ) {
 	}
 
 	// paint the rect first..
-	Window_Paint( &item->window, parent->fadeAmount, parent->fadeClamp, parent->fadeCycle, parent->fadeInAmount );
+	Window_Paint( &item->window, parent->fadeAmount, parent->fadeInAmount, parent->fadeClamp, parent->fadeCycle );
 
 	if ( debugMode ) {
 		vec4_t color;
@@ -4385,8 +4383,8 @@ qboolean UI_IsFullscreen( void ) {
 
 void Item_Init( itemDef_t *item, int imageTrack ) {
 	memset( item, 0, sizeof( itemDef_t ) );
-	item->imageTrack = imageTrack;
 	item->textscale = 0.55f;
+	item->imageTrack = imageTrack;
 	Window_Init( &item->window );
 }
 
@@ -4463,9 +4461,9 @@ qboolean Menu_HandleMouseMove( menuDef_t *menu, float x, float y ) {
 		}
 	}
 
-	/* CoD addition: leaving the menu entirely drops the focus (0x30048829). */
+	/* CoD addition: if the cursor leaves the focused item, drop its focus (0x30048829). */
 	if ( !focusSet ) {
-		if ( focusItem && !Rect_ContainsPoint( &menu->window.rect, x, y ) ) {
+		if ( focusItem && !Rect_ContainsPoint( &focusItem->window.rect, x, y ) ) {
 			Menu_ClearFocus( menu );
 		}
 		return qfalse;
@@ -4558,13 +4556,13 @@ static int KeywordHash_Key( char *keyword ) {
 
 	hash = 0;
 	for ( i = 0; keyword[i] != '\0'; i++ ) {
-		if ( keyword[i] >= 'A' && keyword[i] <= 'Z' ) {
+		if ( Q_isupper( keyword[i] ) ) {
 			hash += ( keyword[i] + ( 'a' - 'A' ) ) * ( 119 + i );
 		} else {
 			hash += keyword[i] * ( 119 + i );
 		}
 	}
-	hash = ( hash ^ ( hash >> 10 ) ^ ( hash >> 20 ) ) & ( KEYWORDHASH_SIZE - 1 );
+	hash = ( hash ^ ( ( hash ^ ( hash >> 10 ) ) >> 10 ) ) & ( KEYWORDHASH_SIZE - 1 );
 	return hash;
 }
 
@@ -5832,16 +5830,13 @@ qboolean MenuParse_itemDef( itemDef_t *item, int handle ) {
 // NERVE - SMF
 qboolean MenuParse_execKey( itemDef_t *item, int handle ) {
 	menuDef_t *menu = (menuDef_t *)item;
-	char keyname;
+	unsigned char keyname;
 
-	if ( !PC_Char_Parse( handle, &keyname ) ) {
+	if ( !PC_Char_Parse( handle, (char *)&keyname ) ) {
 		return qfalse;
 	}
 
-	if ( !PC_Script_Parse( handle, &menu->onKey[ (int)( keyname & 0xff ) ] ) ) {
-		return qfalse;
-	}
-	return qtrue;
+	return PC_Script_Parse( handle, &menu->onKey[keyname] ) != 0;
 }
 
 qboolean MenuParse_execKeyInt( itemDef_t *item, int handle ) {

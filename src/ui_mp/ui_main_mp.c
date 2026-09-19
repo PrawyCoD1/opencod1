@@ -128,7 +128,7 @@ uiInfo_t uiInfo;                                    /* 0x401C3CE0 */
 /* 0x40036AA8: the twelve EXE_MONTH_ABV_* references UI_StartServerRefresh translates */
 static const char *MonthAbbrev[] = {
 	"EXE_MONTH_ABV_JANUARY", "EXE_MONTH_ABV_FEBRUARY", "EXE_MONTH_ABV_MARCH",
-	"EXE_MONTH_ABV_APRIL", "EXE_MONTH_ABV_MAY", "EXE_MONTH_ABV_JUN",
+	"EXE_MONTH_ABV_APRIL", "EXE_MONTH_ABV_MAY", "EXE_MONTH_ABV_JUNE",
 	"EXE_MONTH_ABV_JULY", "EXE_MONTH_ABV_AUGUST", "EXE_MONTH_ABV_SEPTEMBER",
 	"EXE_MONTH_ABV_OCTOBER", "EXE_MONTH_ABV_NOVEMBER", "EXE_MONTH_ABV_DECEMBER"
 };
@@ -1292,14 +1292,14 @@ static qboolean UI_OwnerDrawVisible( int flags ) {
 	while ( flags ) {
 
 		if ( flags & UI_SHOW_FFA ) {
-			if ( Q_stricmp( UI_Cvar_VariableString( "g_gametype" ), "dm" ) != 0 ) {
+			if ( Q_stricmp( "dm", UI_Cvar_VariableString( "g_gametype" ) ) != 0 ) {
 				vis = qfalse;
 			}
 			flags &= ~UI_SHOW_FFA;
 		}
 
 		if ( flags & UI_SHOW_NOTFFA ) {
-			if ( Q_stricmp( UI_Cvar_VariableString( "g_gametype" ), "dm" ) == 0 ) {
+			if ( Q_stricmp( "dm", UI_Cvar_VariableString( "g_gametype" ) ) == 0 ) {
 				vis = qfalse;
 			}
 			flags &= ~UI_SHOW_NOTFFA;
@@ -1653,7 +1653,7 @@ static void UI_LoadMovies( void ) {
 		moviename = movielist;
 		for ( i = 0; i < uiInfo.movieCount; i++ ) {
 			len = strlen( moviename );
-			if ( !Q_stricmp( moviename +  len - 4,".roq" ) ) {
+			if ( !Q_stricmp( ".roq", moviename +  len - 4 ) ) {
 				moviename[len - 4] = '\0';
 			}
 			Q_strupr( moviename );

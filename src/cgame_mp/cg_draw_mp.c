@@ -1158,7 +1158,7 @@ static void CG_DrawTurretCrossHair( void ) {
 	if ( !cg_drawCrosshair.integer ) {
 		return;
 	}
-	if ( cg_crosshairNoGun.integer ) {
+	if ( cl_paused.integer ) {   /* retail gates on cl_paused here, not crosshairNoGun */
 		return;
 	}
 	if ( cg.renderingThirdPerson ) {
@@ -1252,7 +1252,7 @@ static void CG_DrawCrosshair( void ) {
 	if ( !cg_drawCrosshair.integer ) {
 		return;
 	}
-	if ( cg_crosshairNoGun.integer ) {
+	if ( cl_paused.integer ) {   /* retail gates on cl_paused here, not crosshairNoGun */
 		return;
 	}
 	if ( frac == 1.0f && cg_drawGun.integer ) {

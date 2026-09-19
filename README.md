@@ -11,6 +11,12 @@ Reconstruction is **incomplete and ongoing.** The engine, dedicated server, and
 the game/cgame/ui modules build and link; some subsystems (the effects system
 especially) are still being reconstructed, so expect rough edges.
 
+## Recommended Branches
+Branch | Description
+--------|--------
+[main](https://github.com/opencod1/opencod1/tree/main) | Main branch with many enhancements and bug fixes, this is the most recommended one for a stable and improved modding/playing experience.
+[vanilla](https://github.com/opencod1/opencod1/tree/vanilla) | Version of the main branch but with all new features and enhancements removed. Recommended for a vanilla Call of Duty 1.1 experience.
+
 ## Requirements
 
 - Windows
@@ -42,5 +48,6 @@ Output lands in:
 1. Copy the **`build/CodMP.exe`** into your Call of Duty 1 folder.
 2. Copy the three DLLs from **`build/main/`** into the game's **`main/`** folder.
 3. Run **`CodMP.exe`**.
+
 
 

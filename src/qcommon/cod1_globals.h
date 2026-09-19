@@ -464,6 +464,7 @@ extern cvar_t *cl_mouseAccel;   /* 0x015CE848, 36 bytes */
 extern int cl_newSnapshots;   /* 0x01434A78, 4 bytes */
 extern cvar_t *cl_nodelta;   /* 0x01432944, 4 bytes */
 extern cvar_t *cl_noprint;   /* 0x0161731C, 4 bytes */
+extern cvar_t *cl_whitetext;   /* new */
 extern int cl_oldServerTime;   /* 0x01434A68, 8 bytes */
 extern cvar_t *cl_packetdup;   /* 0x015CE844, 4 bytes */
 extern int cl_parseClientsNum;   /* 0x0143A944, 48 bytes */

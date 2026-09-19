@@ -72,7 +72,7 @@ void        MatrixInverseOrthogonal34( void *out, const void *in );
 /* Argument order is ( matrix, out, in ) -- destination in the MIDDLE
    (universal/com_math.c 0x0042F950, server_mp/sv_game_mp.c 0x00456470). */
 void        MatrixTransformVector43( const void *mat, vec3_t out, const vec3_t in );
-void        DObjSkelMatrixMultiply43( const void *skelMat, const void *in1, void *out );
+void        DObjSkelMatrixMultiply43( const void *in1, void *out, const void *skelMat );
 /* OUT IS THE SECOND PARAMETER, not the third: universal/com_math_raw.c:109
    writes through a2 and reads a1 and a3.  Spelled exactly as cg_local.h
    spells it. */
@@ -534,9 +534,9 @@ void G_CalcTagParentAxis( gentity_t *child, matrix43_t *outAxis ) {
 	VectorCopy( parent->r.currentOrigin, parentAxis.origin );
 
 	G_DObjCalcBone( parent, linkInfo->parentTagIndex );
-	DObjSkelMatrixMultiply43( (float *)trap_DObjGetMatrixArray( parent )
-							  + linkInfo->parentTagIndex * 16,
-							  &parentAxis, outAxis );
+	DObjSkelMatrixMultiply43( &parentAxis, outAxis,
+							  (float *)trap_DObjGetMatrixArray( parent )
+							  + linkInfo->parentTagIndex * 16 );
 }
 
 void G_CalcTagParentRelAxis( gentity_t *child, matrix43_t *outAxis ) {

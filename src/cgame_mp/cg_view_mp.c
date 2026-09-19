@@ -799,10 +799,12 @@ static void CG_CalcTurretViewValues( void ) {
 	cg.refdefViewAngles[YAW] += yaw;
 
 	if ( !cg.renderingThirdPerson && cg.predictedPlayerState.viewlocked == 2 ) {
-		cg.refdefViewAngles[PITCH] += ( rand() * 0.000030517578f )
-									  + ( rand() * 0.000030517578f ) - 1.0f;
-		cg.refdefViewAngles[YAW] += ( rand() * 0.000030517578f )
-									+ ( rand() * 0.000030517578f ) - 1.0f;
+		float turretShake;
+
+		turretShake = rand() * 0.000030517578f;
+		cg.refdefViewAngles[PITCH] += turretShake + turretShake - 1.0f;
+		turretShake = rand() * 0.000030517578f;
+		cg.refdefViewAngles[YAW] += turretShake + turretShake - 1.0f;
 	}
 
 	// the eye origin is row 3 of the 4x4 (matrix[12..14] at
@@ -843,48 +845,47 @@ static int CG_CalcViewValues( void ) {
 	if ( ps->pm_type == PM_INTERMISSION ) {
 		VectorCopy( ps->origin, cg.refdef.vieworg );
 		VectorCopy( ps->viewangles, cg.refdefViewAngles );
-		return CG_CalcFov();
-	}
-
-	cg_bobCycle = ps->bobCycle / 255.0f * ( 2 * M_PI ) + ( 2 * M_PI );
-
-	if ( ps->pm_flags & PMF_LADDER ) {
-		if ( cg.time - ps->jumpTime < 500 ) {
-			cg_xyspeed = 0.0f;
-		} else {
-			cg_xyspeed = ps->velocity[2];
-		}
 	} else {
-		cg_xyspeed = (float)sqrt( ps->velocity[1] * ps->velocity[1]
-								  + ps->velocity[0] * ps->velocity[0] );
-	}
 
-	VectorCopy( ps->origin, cg.refdef.vieworg );
-	VectorCopy( ps->viewangles, cg.refdefViewAngles );
+		cg_bobCycle = ps->bobCycle / 255.0f * ( 2 * M_PI ) + ( 2 * M_PI );
 
-	// add error decay
-	if ( cg_errordecay.value > 0 ) {
-		int t;
-
-		t = cg.time - cg_predictedErrorTime;
-		f = ( cg_errordecay.value - t ) / cg_errordecay.value;
-		if ( f > 0 && f < 1 ) {
-			VectorMA( cg.refdef.vieworg, f, cg.predictedError, cg.refdef.vieworg );
+		if ( ps->pm_flags & PMF_LADDER ) {
+			if ( cg.time - ps->jumpTime < 500 ) {
+				cg_xyspeed = 0.0f;
+			} else {
+				cg_xyspeed = ps->velocity[2];
+			}
 		} else {
-			cg_predictedErrorTime = 0;
+			cg_xyspeed = (float)sqrt( ps->velocity[1] * ps->velocity[1]
+									+ ps->velocity[0] * ps->velocity[0] );
+		}
+
+		VectorCopy( ps->origin, cg.refdef.vieworg );
+		VectorCopy( ps->viewangles, cg.refdefViewAngles );
+
+		// add error decay
+		if ( cg_errordecay.value > 0 ) {
+			int t;
+
+			t = cg.time - cg_predictedErrorTime;
+			f = ( cg_errordecay.value - t ) / cg_errordecay.value;
+			if ( f > 0 && f < 1 ) {
+				VectorMA( cg.refdef.vieworg, f, cg.predictedError, cg.refdef.vieworg );
+			} else {
+				cg_predictedErrorTime = 0;
+			}
+		}
+
+		CG_CalcTurretViewValues();
+
+		if ( cg.renderingThirdPerson ) {
+			// back away from character
+			CG_OffsetThirdPersonView();
+		} else {
+			// offset for local bobbing and kicks
+			CG_OffsetFirstPersonView();
 		}
 	}
-
-	CG_CalcTurretViewValues();
-
-	if ( cg.renderingThirdPerson ) {
-		// back away from character
-		CG_OffsetThirdPersonView();
-	} else {
-		// offset for local bobbing and kicks
-		CG_OffsetFirstPersonView();
-	}
-
 	// position eye relative to origin
 	AngleVectors( cg.refdefViewAngles, cg.refdef.viewaxis[0], cg.refdef.viewaxis[1],
 				  cg.refdef.viewaxis[2] );
@@ -1255,12 +1256,10 @@ void CG_DrawActiveFrame( int serverTime, int stereoView, int demoPlayback,
 			if ( cg.predictedPlayerState.weaponslots[i] ) {
 				trap_Cvar_Set( "cg_weaponSelect",
 							   va( "%i", cg.predictedPlayerState.weaponslots[i] ) );
-				break;
+
 			}
 		}
-		if ( i > 5 ) {
-			trap_Cvar_Set( "cg_weaponSelect", "0" );
-		}
+		trap_Cvar_Set( "cg_weaponSelect", "0" );
 	}
 
 	sensitivityScale = cg_fovScale;

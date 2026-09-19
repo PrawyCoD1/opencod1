@@ -87,6 +87,7 @@ extern unsigned char xanim_deferredNotifies[1536];   /* 0x00A9C650, 1536 bytes *
 extern const char Source[4];   /* 0x005682F8, 4 bytes */
 extern char byte_57C910[8192];   /* 0x0057C910, 8192 bytes */
 extern cvar_t *cl_noprint;   /* 0x0161731C, 4 bytes */
+extern cvar_t *cl_whitetext;   /*new*/
 extern int con_boldgamemessagetime;   /* 0x0140EF2C, 4 bytes */
 extern signed __int32 con_current;   /* 0x0142EF44, 4 bytes */
 extern signed __int32 con_display;   /* 0x0142EF48, 4 bytes */
@@ -1031,9 +1032,15 @@ int __cdecl CL_CgameSystemCalls(int *args)
         }
         while ( v8 );
       }
+      
       else
       {
-        CL_ConsolePrint_AddLine((byte *)v5, 1, v6, v4, 7);
+          if (cl_whitetext && cl_whitetext->integer) {
+              CL_ConsolePrint_AddLine((byte*)v5, 1, v6, v4, 7);
+          }
+          else {
+              CL_ConsolePrint_AddLine((byte*)v5, 4, v6, v4, 7);
+          }
       }
       goto LABEL_326;
     case 3:
