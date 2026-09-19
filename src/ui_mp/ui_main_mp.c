@@ -1291,14 +1291,14 @@ static qboolean UI_OwnerDrawVisible( int flags ) {
 	while ( flags ) {
 
 		if ( flags & UI_SHOW_FFA ) {
-			if ( Q_stricmp( UI_Cvar_VariableString( "g_gametype" ), "dm" ) != 0 ) {
+			if ( Q_stricmp( "dm", UI_Cvar_VariableString( "g_gametype" ) ) != 0 ) {
 				vis = qfalse;
 			}
 			flags &= ~UI_SHOW_FFA;
 		}
 
 		if ( flags & UI_SHOW_NOTFFA ) {
-			if ( Q_stricmp( UI_Cvar_VariableString( "g_gametype" ), "dm" ) == 0 ) {
+			if ( Q_stricmp( "dm", UI_Cvar_VariableString( "g_gametype" ) ) == 0 ) {
 				vis = qfalse;
 			}
 			flags &= ~UI_SHOW_NOTFFA;
@@ -1652,7 +1652,7 @@ static void UI_LoadMovies( void ) {
 		moviename = movielist;
 		for ( i = 0; i < uiInfo.movieCount; i++ ) {
 			len = strlen( moviename );
-			if ( !Q_stricmp( moviename +  len - 4,".roq" ) ) {
+			if ( !Q_stricmp( ".roq", moviename +  len - 4 ) ) {
 				moviename[len - 4] = '\0';
 			}
 			Q_strupr( moviename );
