@@ -9,6 +9,8 @@
 #include "cl_vm.h"
 #include "cl_discord.h"
 
+int clc_serverBuild = -1;
+
 extern void CL_ParseServerMessage( msg_t *msg );
 extern void MSS_StopSounds( int flags );        /* 0x0044FA40 */
 
@@ -55,7 +57,7 @@ extern int   MSG_ReadLong( msg_t *msg );
 extern char *MSG_ReadString( msg_t *msg );
 extern char *MSG_ReadStringLine( msg_t *msg );
 void MSG_WriteBigString( const char *s, msg_t *sb );
-int  MSG_WriteBitsCompress( const byte *datasrc, int bytecount, byte *buffdest );
+int  MSG_WriteBitsCompress( const byte *datasrc, int bytecount, byte *buffdest, int capacity );
 extern int MSG_WriteDeltaStruct();
 void MSG_WriteByte( msg_t *msg, int c );
 void MSG_WriteShort( msg_t *msg, int c );
@@ -355,15 +357,15 @@ void CL_Record_f( void ) {
 	if ( Cmd_Argc() == 2 ) {
 		s = Cmd_Argv( 1 );
 		Q_strncpyz( demoName, s, 64 );
-		Com_sprintf( name, sizeof( name ), "demos/%s.dm_%d", demoName,
-					 PROTOCOL_VERSION );
+		Com_sprintf( name, sizeof( name ), "demos/%s.%s", demoName,
+					 clc_serverBuild >= 0 ? "dm_1x" : "dm_1" );
 	} else {
 		int number;
 
 		for ( number = 0; number <= 9999; number++ ) {
 			CL_DemoFilename( demoName, number );
-			Com_sprintf( name, sizeof( name ), "demos/%s.dm_%d", demoName,
-						 PROTOCOL_VERSION );
+			Com_sprintf( name, sizeof( name ), "demos/%s.%s", demoName,
+						 clc_serverBuild >= 0 ? "dm_1x" : "dm_1" );
 
 			len = FS_ReadFile( name, NULL );
 			if ( len <= 0 ) {
@@ -378,12 +380,19 @@ void CL_Record_f( void ) {
 		Com_Printf( "ERROR: couldn't open.\n" );
 		return;
 	}
+	if ( clc_serverBuild >= 0 ) {
+		/* Extended demos carry the pre-gamestate connection identity. */
+		Buffer = -2;
+		FS_Write( &Buffer, 4, clc_demofile );
+		FS_Write( &clc_serverBuild, 4, clc_demofile );
+	}
 	clc_demorecording = qtrue;
 	Q_strncpyz( clc_demoName, demoName, sizeof( clc_demoName ) );
 
 	clc_demowaiting = qtrue;
 
 	MSG_Init( &buf, bufData, sizeof( bufData ) );
+	buf.extended = clc_serverBuild >= 0;
 
 	MSG_WriteLong( &buf, clc_reliableSequence );
 
@@ -418,7 +427,7 @@ void CL_Record_f( void ) {
 	MSG_WriteByte( &buf, svc_EOF );
 
 	*(int *)packet = *(int *)buf.data;
-	len = MSG_WriteBitsCompress( buf.data + 4, buf.cursize - 4, packet + 4 ) + 4;
+	len = MSG_WriteBitsCompress( buf.data + 4, buf.cursize - 4, packet + 4, sizeof( packet ) - 4 ) + 4;
 
 	Buffer = clc_serverMessageSequence;
 	FS_Write( &Buffer, 4, clc_demofile );
@@ -428,6 +437,19 @@ void CL_Record_f( void ) {
 
 	FS_Write( packet, len, clc_demofile );
 
+}
+
+/* Queued by cgame after a qualifying respawn. Recheck state when executed. */
+static void CL_AutorecordRespawn_f( void ) {
+	if ( Cmd_Argc() != 1 || !Cvar_VariableIntegerValue( "cl_autorecord" ) ||
+		clc_demoplaying || cls_state != CA_ACTIVE ) {
+		return;
+	}
+
+	if ( clc_demorecording ) {
+		CL_StopRecord_f();
+	}
+	CL_Record_f();
 }
 
 /* ---- CL_DemoCompleted  0x0040E920 ----  VERIFIED */
@@ -454,7 +476,7 @@ void __cdecl CL_ReadDemoMessage()
   int v0;
   msg_t msg;
   int Buffer;
-  char v3[0x4000];
+  char v3[MAX_MSGLEN];
   unsigned int v4;
   unsigned int retaddr;
 
@@ -468,10 +490,10 @@ void __cdecl CL_ReadDemoMessage()
     MSG_initHuffman();
   memset(&msg, 0, sizeof(msg));
   msg.data = (unsigned __int8 *)&v3;
-  msg.maxsize = 0x4000;
+  msg.maxsize = sizeof( v3 );
   if ( FS_Read(&msg.cursize, 4, clc_demofile) != 4 || msg.cursize == -1 )
     goto LABEL_11;
-  if ( msg.cursize > msg.maxsize )
+  if ( msg.cursize < 0 || msg.cursize > msg.maxsize )
     Com_Error(ERR_DROP, &byte_5676E8);
   v0 = FS_Read(msg.data, msg.cursize, clc_demofile);
   if ( v0 != msg.cursize )
@@ -494,6 +516,8 @@ LABEL_11:
 void CL_PlayDemo_f( void ) {
 	char name[MAX_OSPATH], extension[32];
 	char *arg;
+	int header;
+	qboolean explicitExtension;
 
 	if ( Cmd_Argc() != 2 ) {
 		Com_Printf( "playdemo <demoname>\n" );
@@ -509,7 +533,10 @@ void CL_PlayDemo_f( void ) {
 
 	arg = Cmd_Argv( 1 );
 	Com_sprintf( extension, sizeof( extension ), ".dm_%d", PROTOCOL_VERSION );
-	if ( !Q_stricmp( arg + strlen( arg ) - strlen( extension ), extension ) ) {
+	explicitExtension = ( strlen( arg ) >= strlen( extension ) &&
+		!Q_stricmp( arg + strlen( arg ) - strlen( extension ), extension ) ) ||
+		( strlen( arg ) >= 6 && !Q_stricmp( arg + strlen( arg ) - 6, ".dm_1x" ) );
+	if ( explicitExtension ) {
 		Com_sprintf( name, sizeof( name ), "demos/%s", arg );
 	} else {
 		Com_sprintf( name, sizeof( name ), "demos/%s.dm_%d", arg, PROTOCOL_VERSION );
@@ -517,9 +544,26 @@ void CL_PlayDemo_f( void ) {
 
 	fs_loadingMode = 1;
 	FS_FOpenFileRead_Internal( name, &clc_demofile, qtrue, 0 );
+	if ( !clc_demofile && !explicitExtension ) {
+		Com_sprintf( name, sizeof( name ), "demos/%s.dm_1x", arg );
+		FS_FOpenFileRead_Internal( name, &clc_demofile, qtrue, 0 );
+	}
 	if ( !clc_demofile ) {
 		Com_Error( ERR_DROP, va( "EXE_ERR_CANT_WRITE" "\x15" "%s", name ) );
 		return;
+	}
+	if ( FS_Read( &header, 4, clc_demofile ) != 4 ) {
+		Com_Error( ERR_DROP, "Truncated demo header" );
+		return;
+	}
+	if ( header == -2 ) {
+		if ( FS_Read( &clc_serverBuild, 4, clc_demofile ) != 4 || clc_serverBuild < 0 ) {
+			Com_Error( ERR_DROP, "Invalid extended demo header" );
+			return;
+		}
+	} else {
+		clc_serverBuild = -1;
+		FS_Seek( clc_demofile, 0, FS_SEEK_SET );
 	}
 	Q_strncpyz( clc_demoName, Cmd_Argv( 1 ), sizeof( clc_demoName ) );
 
@@ -607,7 +651,7 @@ void CL_MapLoading( void ) {
 void CL_ClearState( void )
 {
 	Com_Memset( &cl_active, 0, 1231064 );                     /* 0x01432960 <- real extent, cl_refstorage.c */
-	Com_Memset( &cl_snap_valid, 0, 8448 );                    /* 0x01432964 <- real extent, cl_refstorage.c */
+	Com_Memset( &cl_snap_valid, 0, SNAP_SIZE );                    /* 0x01432964 <- real extent, cl_refstorage.c */
 	Com_Memset( cl_snap_snapFlags, 0, 4 );                    /* 0x01432968 */
 	Com_Memset( &cl_snap_serverTime, 0, 4 );                  /* 0x0143296C */
 	Com_Memset( cl_snap_messageNum, 0, 4 );                   /* 0x01432970 */
@@ -628,9 +672,9 @@ void CL_ClearState( void )
 	Com_Memset( &cl_serverTimeDelta, 0, 4 );                  /* 0x01434A70 */
 	Com_Memset( &cl_extrapolatedSnapshot, 0, 4 );             /* 0x01434A74 */
 	Com_Memset( &cl_newSnapshots, 0, 4 );                     /* 0x01434A78 */
-	Com_Memset( cl_gameState_stringOffsets, 0, 24196 );       /* 0x01434A7C <- real extent, cl_refstorage.c */
+	Com_Memset( cl_gameState_stringOffsets, 0, GS_SIZE );       /* 0x01434A7C <- real extent, cl_refstorage.c */
 	Com_Memset( &cl_gameState_stringOffsets_CS_SYSTEMINFO_, 0, 4 ); /* 0x01434A80 */
-	Com_Memset( cl_gameState_stringData, 0, 16000 );          /* 0x01436A7C */
+	Com_Memset( cl_gameState_stringData, 0, EXTENDED_MAX_GAMESTATE_CHARS );
 	Com_Memset( &cl_gameState_dataCount, 0, 4 );              /* 0x0143A8FC */
 	Com_Memset( cl_mapname, 0, 64 );                         /* 0x0143A900 */
 	Com_Memset( &cl_parseEntitiesNum, 0, 4 );                 /* 0x0143A940 */
@@ -663,7 +707,7 @@ void CL_ClearState( void )
 	Com_Memset( dword_143AFB4, 0, 384 );                      /* 0x0143AFB4 */
 	Com_Memset( dword_143AFB8, 0, 380 );                      /* 0x0143AFB8 */
 	Com_Memset( dword_143AFBC, 0, 376 );                      /* 0x0143AFBC */
-	Com_Memset( cl_snapshots, 0, 270336 );                    /* 0x0143B134 */
+	Com_Memset( cl_snapshots, 0, 32 * SNAP_SIZE );                    /* 0x0143B134 */
 	Com_Memset( byte_147D134, 0, 245760 );                    /* 0x0147D134 */
 	Com_Memset( byte_14B9134, 0, 491520 );                    /* 0x014B9134 */
 	Com_Memset( byte_1531134, 0, 188676 );                    /* 0x01531134 */
@@ -756,7 +800,8 @@ void __cdecl CL_Disconnect(qboolean showMainMenu)
       Com_Memset( clc_timeDemoFrames, 0, 12 );                    /* 0x015EF014 */
       Com_Memset( &clc_timeDemoStart, 0, 4 );                     /* 0x015EF018 */
       Com_Memset( &clc_timeDemoBaseTime, 0, 4 );                  /* 0x015EF01C */
-      Com_Memset( chan, 0, 32832 );                               /* 0x015EF020 clc.netchan */
+      Com_Memset( chan, 0, sizeof( netchan_t ) );                               /* 0x015EF020 clc.netchan */
+	  clc_serverBuild = -1;
 
       cls_state = CA_DISCONNECTED;
       cl_connectedToPureServer = 0;
@@ -1632,6 +1677,7 @@ void __cdecl CL_CheckForResend( void )
 	strncpy( Destination, info, 0x3FF );
 	Destination[1023] = 0;
 	Info_SetValueForKey( Destination, "protocol", va( "%i", 1 ) );
+	Info_SetValueForKey( Destination, "xtndedbuild", va( "%i", OPENCOD_EXTENDED_BUILD ) );
 	Info_SetValueForKey( Destination, "qport", va( "%i", qport ) );
 	Info_SetValueForKey( Destination, "challenge", va( "%i", *(int *) clc_challenge ) );
 
@@ -1884,6 +1930,11 @@ void CL_ConnectionlessPacket( netadr_t from, msg_t *msg )
 			}
 			Netchan_Setup( (netchan_t *) chan, NS_CLIENT, from,
 			               (int) Cvar_VariableValue( "net_qport" ) );
+			/* The server puts its serverinfo marker in the response so it is
+			 * available before fragmented gamestate data arrives. */
+			clc_serverBuild = Net_ParseServerBuild( Info_ValueForKey(
+				Cmd_Argv( 1 ), "xtndedbuild" ) );
+			( (netchan_t *)chan )->extended = clc_serverBuild >= 0;
 			cls_state = CA_CONNECTED;
 			clc_lastPacketTime = cls_realtime;
 			clc_lastPacketSentTime = -9999;
@@ -3712,7 +3763,7 @@ void CL_ForwardCommandToServer( const char *string ) {
 	}
 }
 
-extern unsigned char chan[32832];       /* 0x015EF020 clc.netchan */
+extern unsigned char chan[2 * MAX_MSGLEN + 68];       /* 0x015EF020 clc.netchan */
 extern int  clc_lastPacketTime;
 extern int  clc_reliableAcknowledge;
 extern int  clc_serverMessageSequence;
@@ -3985,6 +4036,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand( "vid_restart", CL_Vid_Restart_f );
 	Cmd_AddCommand( "disconnect", CL_Disconnect_f );
 	Cmd_AddCommand( "record", CL_Record_f );
+	Cmd_AddCommand( "autorecord_respawn", CL_AutorecordRespawn_f );
 	Cmd_AddCommand( "demo", CL_PlayDemo_f );
 	Cmd_AddCommand( "cinematic", CL_PlayCinematic_f );
 	Cmd_AddCommand( "logo", CL_PlayLogo_f );
@@ -4013,6 +4065,7 @@ void CL_Init( void ) {
 	Cvar_Set2( "cl_running", "1", qtrue );
 	CL_DiscordInit();
 	Cvar_Get( "g_bounce", "0", CVAR_ARCHIVE );
+	Cvar_Get( "cl_autorecord", "0", CVAR_ARCHIVE );
 
 	Com_Printf( "----- Client Initialization Complete -----\n" );
 }
@@ -4053,6 +4106,7 @@ void CL_Shutdown( void ) {
 	Cmd_RemoveCommand( "vid_restart" );
 	Cmd_RemoveCommand( "disconnect" );
 	Cmd_RemoveCommand( "record" );
+	Cmd_RemoveCommand( "autorecord_respawn" );
 	Cmd_RemoveCommand( "demo" );
 	Cmd_RemoveCommand( "cinematic" );
 	Cmd_RemoveCommand( "stoprecord" );

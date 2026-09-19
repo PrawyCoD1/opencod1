@@ -251,7 +251,6 @@ void SV_DirectConnect( netadr_t from ) {
 	int startIndex;
 	client_t    *cl;
 	client_t    *newcl;
-	client_t emptyClient;
 	const char  *denied;
 
 	Com_DPrintf( "SVC_DirectConnect ()\n" );
@@ -273,6 +272,10 @@ void SV_DirectConnect( netadr_t from ) {
 	}
 
 	challengeNum = atoi( Info_ValueForKey( userinfo, "challenge" ) );
+	if ( from.type != NA_BOT && Net_ParseServerBuild( Info_ValueForKey( userinfo, "xtndedbuild" ) ) < OPENCOD_EXTENDED_BUILD ) {
+		NET_OutOfBandPrint( NS_SERVER, from, "error\nThis server requires the updated 1.1x client." );
+		return;
+	}
 	qport = atoi( Info_ValueForKey( userinfo, "qport" ) );
 
 	cl = svs.clients;
@@ -329,7 +332,6 @@ void SV_DirectConnect( netadr_t from ) {
 		}
 	}
 
-	memset( &emptyClient, 0, sizeof( emptyClient ) );
 
 	newcl = NULL;
 	cl = svs.clients;
@@ -372,7 +374,7 @@ void SV_DirectConnect( netadr_t from ) {
 		newcl->reliableSequence = 0;
 	}
 
-	*newcl = emptyClient;
+	memset( newcl, 0, sizeof( *newcl ) );
 	clientNum = (int)( newcl - svs.clients );
 	newcl->gentity = (gentity_t *)( (byte *)sv.gentities + clientNum * sv.gentitySize );
 	newcl->scriptId = SV_AllocClientScriptPers();
@@ -401,7 +403,17 @@ void SV_DirectConnect( netadr_t from ) {
 
 	svs.challenges[clientNum].firstPing = 0;
 
-	NET_OutOfBandPrint( NS_SERVER, from, "connectResponse" );
+	{
+		char build[32];
+		Cvar_VariableStringBuffer( "xtndedbuild", build, sizeof( build ) );
+		if ( Net_ParseServerBuild( build ) >= 0 ) {
+			newcl->netchan.extended = qtrue;
+			NET_OutOfBandPrint( NS_SERVER, from,
+				"connectResponse \\xtndedbuild\\%s", build );
+		} else {
+			NET_OutOfBandPrint( NS_SERVER, from, "connectResponse" );
+		}
+	}
 	Com_DPrintf( "Going from CS_FREE to CS_CONNECTED for %s\n", newcl->name );
 
 	newcl->state = CS_CONNECTED;
@@ -504,6 +516,7 @@ void SV_DelayDropClient( client_t *cl, const char *reason ) {
 /* ---- SV_SendClientGameState  0x00453FC0 ---- */
 void SV_SendClientGameState( client_t *client ) {
 	int start;
+	int gameStateChars = 1;
 	entityState_t nullstate;
 	svEntity_t     *svEnt;
 	msg_t msg;
@@ -524,7 +537,8 @@ void SV_SendClientGameState( client_t *client ) {
 	if ( msgInit == qfalse ) {
 		MSG_initHuffman();
 	}
-	MSG_Init( &msg, msgBuffer, sizeof( msgBuffer ) );
+	MSG_Init( &msg, msgBuffer, client->netchan.extended ? MAX_MSGLEN : STOCK_MAX_MSGLEN );
+	msg.extended = client->netchan.extended;
 
 	MSG_WriteLong( &msg, client->lastClientCommand );
 
@@ -535,6 +549,11 @@ void SV_SendClientGameState( client_t *client ) {
 
 	for ( start = 0 ; start < MAX_CONFIGSTRINGS ; start++ ) {
 		if ( sv.configstrings[start][0] ) {
+			gameStateChars += strlen( sv.configstrings[start] ) + 1;
+			if ( gameStateChars > Protocol_GameStateLimit( client->netchan.extended ) ) {
+				SV_DropClient( client, "Gamestate exceeds this connection's limit" );
+				return;
+			}
 			MSG_WriteByte( &msg, svc_configstring );
 			MSG_WriteShort( &msg, start );
 			MSG_WriteBigString( sv.configstrings[start], &msg );
@@ -1401,8 +1420,9 @@ void SV_ExecuteClientMessage( msg_t *msg, client_t *cl ) {
 	memset( &decoded, 0, sizeof( decoded ) );
 	decoded.data = decodedBuf;
 	decoded.maxsize = MAX_MSGLEN;
+	decoded.extended = cl->netchan.extended;
 	decoded.cursize = MSG_ReadBitsCompress( &msg->data[msg->readcount], decodedBuf,
-											msg->cursize - msg->readcount );
+											msg->cursize - msg->readcount, sizeof( decodedBuf ) );
 
 	serverId = cl->serverId;
 

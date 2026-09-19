@@ -464,7 +464,7 @@ void trap_GetGlconfig( glconfig_t *vidConfig ) {
 }
 
 void trap_GetGameState( gameState_t *gamestate ) {
-	syscall( CG_GETGAMESTATE, gamestate );
+	syscall( CG_GETGAMESTATE, gamestate, sizeof( *gamestate ) );
 }
 
 void trap_GetCurrentSnapshotNumber( int *snapshotNumber, int *serverTime ) {
@@ -472,7 +472,7 @@ void trap_GetCurrentSnapshotNumber( int *snapshotNumber, int *serverTime ) {
 }
 
 int trap_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
-	return syscall( CG_GETSNAPSHOT, snapshotNumber, snapshot );
+	return syscall( CG_GETSNAPSHOT, snapshotNumber, snapshot, sizeof( *snapshot ) );
 }
 
 int trap_GetServerCommand( int serverCommandNumber ) {

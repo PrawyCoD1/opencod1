@@ -109,6 +109,14 @@ typedef struct {
 static hwSnapshot_t hw_snap;
 static DWORD        hw_lastEip;
 
+/* A raw stack contains sanitizer redzones and may end at a guard page.
+   Copy through the OS instead of dereferencing another thread's locals. */
+static int HW_ReadStack( const void *address, void *out, SIZE_T size ) {
+	SIZE_T copied = 0;
+	return ReadProcessMemory( GetCurrentProcess(), address, out, size, &copied )
+	       && copied == size;
+}
+
 static void HW_Capture( hwSnapshot_t *s ) {
 	DWORD *frame;
 	DWORD *sp;
@@ -128,19 +136,20 @@ static void HW_Capture( hwSnapshot_t *s ) {
 
 		frame = (DWORD *) s->ctx.Ebp;
 		for ( i = 0; i < HW_RETS; i++ ) {
-			if ( IsBadReadPtr( frame, 8 ) ) {
+			DWORD link[2];
+			if ( !HW_ReadStack( frame, link, sizeof( link ) ) ) {
 				break;
 			}
-			s->rets[s->numRets++] = frame[1];
-			frame = (DWORD *) frame[0];
+			s->rets[s->numRets++] = link[1];
+			frame = (DWORD *) link[0];
 		}
 
 		sp = (DWORD *) ( s->ctx.Esp & ~3UL );
 		for ( i = 0; i < HW_STACK_WORDS; i++ ) {
-			if ( IsBadReadPtr( sp + i, 4 ) ) {
+			if ( !HW_ReadStack( sp + i, &s->stack[s->numStack], sizeof( DWORD ) ) ) {
 				break;
 			}
-			s->stack[s->numStack++] = sp[i];
+			s->numStack++;
 		}
 	}
 

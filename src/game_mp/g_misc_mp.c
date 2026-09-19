@@ -1220,11 +1220,11 @@ void G_SpawnTurret( const char *weaponName, gentity_t *ent ) {
 
 	weapon = bg_weaponInfo[ent->s.weapon];
 
-	if ( !level.spawning && !itemRegistered[ent->s.weapon] ) {
+	if ( !level.spawning && !itemRegistered[BG_WeaponItemIndex( ent->s.weapon )] ) {
 		Scr_Error( va( "turret '%s' not precached", weaponName ) );
 	}
 
-	RegisterItem( ent->s.weapon, 1 );
+	RegisterItem( BG_WeaponItemIndex( ent->s.weapon ), 1 );
 
 	turret->fireTimeRemaining = 0;
 	turret->useMode = weapon->stance;

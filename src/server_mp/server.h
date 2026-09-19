@@ -195,7 +195,7 @@ typedef struct gclient_s {
 	int pingTime;                   /* +0x2268 PlayerCmd_pingPlayer 0x2001B450 */
 	byte unknown_0x226C[88];        /* bg_weapon.c's saved view/weapon angle state */
 } gclient_t;
-SV_ASSERT_SIZE( gclient_t, 8900 );
+SV_ASSERT_SIZE( gclient_t, 8900 + PLAYERSTATE_EXTRA_BYTES );
 
 typedef struct gentity_s {
 	entityState_t s;
@@ -261,7 +261,7 @@ typedef struct clientSnapshot_t {
 	unsigned int messageAcked;
 	int messageSize;
 } clientSnapshot_t;
-SV_ASSERT_SIZE( clientSnapshot_t, 8428 );
+SV_ASSERT_SIZE( clientSnapshot_t, 8428 + PLAYERSTATE_EXTRA_BYTES );
 
 typedef struct reliableCommands_t {
 	char command[MAX_STRING_CHARS];
@@ -323,7 +323,7 @@ typedef struct client_t {
 	int bIsTestClient;
 	int serverId;
 } client_t;
-SV_ASSERT_SIZE( client_t, 370940 );
+SV_ASSERT_SIZE( client_t, 370940 + PACKET_BACKUP * PLAYERSTATE_EXTRA_BYTES + 2 * ( MAX_MSGLEN - STOCK_MAX_MSGLEN ) + 4 );
 
 typedef struct challenge_t {
 	netadr_t adr;
@@ -370,7 +370,7 @@ typedef struct cachedClient_s {
 	byte cs[92];                    /* +0x0004 the 92-byte snapshot client record; its first dword is the client number */
 	playerState_t ps;               /* +0x0060 8400 bytes */
 } cachedClient_t;
-SV_ASSERT_SIZE( cachedClient_t, 8496 );
+SV_ASSERT_SIZE( cachedClient_t, 8496 + PLAYERSTATE_EXTRA_BYTES );
 
 #define SV_NUM_ARCHIVED_SNAPSHOT_FRAMES     1200
 #define SV_NUM_CACHED_SNAPSHOT_FRAMES       512
@@ -401,9 +401,9 @@ typedef struct serverStatic_t {
 	int nextCachedSnapshotEntities;
 	int nextCachedSnapshotClients;
 	int nextCachedSnapshotFrames;
-	void                *cachedSnapshotFrames;      /* +0x48 -- really the ENTITY ring */
-	void                *cachedSnapshotEntities;    /* +0x4C -- really the CLIENT ring */
-	void                *cachedSnapshotClients;     /* +0x50 -- really the FRAME ring */
+	archivedEntity_t    *cachedSnapshotEntities;    /* +0x48 */
+	cachedClient_t      *cachedSnapshotClients;     /* +0x4C */
+	cachedSnapshot_t    *cachedSnapshotFrames;      /* +0x50 */
 
 	int nextHeartbeatTime;
 	challenge_t challenges[MAX_CHALLENGES];
@@ -413,9 +413,9 @@ typedef struct serverStatic_t {
 } serverStatic_t;
 SV_ASSERT_SIZE( serverStatic_t, 45188 );
 
-#define SVS_CACHED_ENTITIES     ( (archivedEntity_t *)svs.cachedSnapshotFrames )
-#define SVS_CACHED_CLIENTS      ( (cachedClient_t *)svs.cachedSnapshotEntities )
-#define SVS_CACHED_FRAMES       ( (cachedSnapshot_t *)svs.cachedSnapshotClients )
+#define SVS_CACHED_ENTITIES     ( svs.cachedSnapshotEntities )
+#define SVS_CACHED_CLIENTS      ( svs.cachedSnapshotClients )
+#define SVS_CACHED_FRAMES       ( svs.cachedSnapshotFrames )
 
 extern server_t sv;                     /* 0x016515A0, local to the server */
 extern serverStatic_t svs;              /* 0x016B2AA0, persistent across maps */
@@ -540,7 +540,7 @@ qboolean SV_ClientCommand( msg_t *msg, client_t *cl );
 void SV_UserMove( qboolean delta, client_t *cl, msg_t *msg );
 void SV_SendClientGameState( client_t *client );
 void SV_ClientEnterWorld( client_t *cl, usercmd_t *cmd );
-int MSG_ReadBitsCompress( const byte *input, byte *outputBuf, int readsize );
+int MSG_ReadBitsCompress( const byte *input, byte *outputBuf, int readsize, int capacity );
 void SV_SendClientMessages( void );
 void SV_SendClientSnapshot( client_t *client );
 void SV_ArchiveSnapshot( void );

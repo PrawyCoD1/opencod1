@@ -12,7 +12,7 @@
 extern void CL_Netchan_Encode( byte *data, int length );
 extern void MSG_SetDefaultUserCmd( const byte *ps, usercmd_t *ucmd );
 extern void MSG_WriteBits( msg_t *msg, int value, int bits );
-extern int  MSG_WriteBitsCompress( const byte *datasrc, int bytecount, byte *buffdest );
+extern int  MSG_WriteBitsCompress( const byte *datasrc, int bytecount, byte *buffdest, int capacity );
 extern void MSG_WriteByte( msg_t *msg, int c );
 extern void MSG_WriteLong( msg_t *msg, int c );
 extern void MSG_WriteDeltaUsercmdKey( const usercmd_t *from, const usercmd_t *to,
@@ -1132,7 +1132,8 @@ void __cdecl CL_WritePacket( void )
 	}
 	memset( &msg, 0, sizeof( msg ) );
 	msg.data = data;
-	msg.maxsize = MAX_MSGLEN;
+	msg.maxsize = clc_netchan.extended ? MAX_MSGLEN : STOCK_MAX_MSGLEN;
+	msg.extended = clc_netchan.extended;
 
 	MSG_WriteByte( &msg, (byte)cl_serverId );
 
@@ -1192,7 +1193,7 @@ void __cdecl CL_WritePacket( void )
 	Com_Memcpy( packet, msg.data, CL_ENCODE_START );
 	size = MSG_WriteBitsCompress( msg.data + CL_ENCODE_START,
 								  msg.cursize - CL_ENCODE_START,
-								  packet + CL_ENCODE_START );
+								  packet + CL_ENCODE_START, sizeof( packet ) - CL_ENCODE_START );
 
 	packetNum = clc_netchan.outgoingSequence & PACKET_MASK;
 	OUTPACKET_REALTIME( packetNum )  = cls_realtime;

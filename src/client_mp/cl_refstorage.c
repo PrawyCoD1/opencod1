@@ -6,6 +6,7 @@
 
 #include "../qcommon/qcommon.h"
 #include "cl_refapi.h"
+#include "cl_records.h"
 
 glconfig_t cls_glconfig;
 
@@ -133,51 +134,58 @@ field_t         historyEditLines[32];       /* 0x014304C0, 9088 == 32 * 284 */
 extern void     StatMon_Reset( void );      /* qcommon/statmonitor.c, 0x00451A60 */
 
 /* ---- CL_GlConfigFromRenderer  no-address ---- */
+void CL_CopyRendererConfig( void *output )
+{
+    glconfig_t *config = (glconfig_t *)output;
+    memset( config, 0, sizeof( *config ) );
+    config->renderer_string        = (char *) glConfig_renderer_string;
+    config->vendor_string          = (char *) glConfig_vendor_string;
+    config->version_string         = (char *) glConfig_version_string;
+    config->extensions_string      = (char *) glConfig_extensions_string;
+    config->wextensions_string     = (char *) glConfig_wextensions_string;
+
+    config->maxTextureSize         = glConfig_maxTextureSize;
+    config->maxActiveTextures      = Value;
+    config->maxLights              = glConfig_maxLights;
+
+    config->colorBits              = glConfig_colorBits;
+    config->depthBits              = glConfig_depthBits;
+    config->stencilBits            = glConfig_stencilBits;
+    config->deviceSupportsGamma    = glConfig_deviceSupportsGamma;
+
+    config->unk_30                 = glConfig_maxAnisotropy;
+    config->unk_34                 = glConfig_maxTextureFilterAnisotropy;
+    config->textureEnvAddAvailable = glConfig_textureEnvAddAvailable;
+    config->unk_3C                 = glConfig_textureCubeMap;
+    config->unk_40                 = glConfig_textureEnvCombine;
+    config->unk_44                 = glConfig_textureEnvDot3;
+    config->unk_48                 = glConfig_ARBVertexBufferObject;
+    config->unk_4C                 = glConfig_ARBVertexProgram;
+    config->unk_50                 = glConfig_rescaleNormal;
+    config->NVFogAvailable         = glConfig_NVFogAvailable;
+    config->unk_58                 = glConfig_NVFogMode;
+    config->unk_5C                 = glConfig_NVVertexArrayRange;
+    config->unk_64                 = glConfig_NVRegisterCombiners;
+    config->unk_68                 = glConfig_NVTextureShader;
+    config->unk_6C                 = glConfig_maxPNTrianglesTessellationLevel;
+    config->unk_70                 = glConfig_pnTrianglesNormalMode;
+    config->unk_74                 = glConfig_pnTrianglesPointMode;
+    config->unk_78                 = glConfig_ATIVertexArrayObject;
+    config->unk_7C                 = glConfig_ATIElementArray;
+    config->unk_80                 = glConfig_ATIFragmentShader;
+
+    config->vidWidth               = dwStyle;
+    config->vidHeight              = dwExStyle;
+    config->windowAspect           = glConfig_windowAspect;
+    config->displayFrequency       = glConfig_displayFrequency;
+    config->isFullscreen           = glConfig_isFullscreen;
+    config->stereoEnabled          = glConfig_stereoEnabled;
+
+}
+
 static void CL_GlConfigFromRenderer( void )
 {
-    cls_glconfig.renderer_string        = (char *) glConfig_renderer_string;
-    cls_glconfig.vendor_string          = (char *) glConfig_vendor_string;
-    cls_glconfig.version_string         = (char *) glConfig_version_string;
-    cls_glconfig.extensions_string      = (char *) glConfig_extensions_string;
-    cls_glconfig.wextensions_string     = (char *) glConfig_wextensions_string;
-
-    cls_glconfig.maxTextureSize         = glConfig_maxTextureSize;
-    cls_glconfig.maxActiveTextures      = Value;
-    cls_glconfig.maxLights              = glConfig_maxLights;
-
-    cls_glconfig.colorBits              = glConfig_colorBits;
-    cls_glconfig.depthBits              = glConfig_depthBits;
-    cls_glconfig.stencilBits            = glConfig_stencilBits;
-    cls_glconfig.deviceSupportsGamma    = glConfig_deviceSupportsGamma;
-
-    cls_glconfig.unk_30                 = glConfig_maxAnisotropy;
-    cls_glconfig.unk_34                 = glConfig_maxTextureFilterAnisotropy;
-    cls_glconfig.textureEnvAddAvailable = glConfig_textureEnvAddAvailable;
-    cls_glconfig.unk_3C                 = glConfig_textureCubeMap;
-    cls_glconfig.unk_40                 = glConfig_textureEnvCombine;
-    cls_glconfig.unk_44                 = glConfig_textureEnvDot3;
-    cls_glconfig.unk_48                 = glConfig_ARBVertexBufferObject;
-    cls_glconfig.unk_4C                 = glConfig_ARBVertexProgram;
-    cls_glconfig.unk_50                 = glConfig_rescaleNormal;
-    cls_glconfig.NVFogAvailable         = glConfig_NVFogAvailable;
-    cls_glconfig.unk_58                 = glConfig_NVFogMode;
-    cls_glconfig.unk_5C                 = glConfig_NVVertexArrayRange;
-    cls_glconfig.unk_64                 = glConfig_NVRegisterCombiners;
-    cls_glconfig.unk_68                 = glConfig_NVTextureShader;
-    cls_glconfig.unk_6C                 = glConfig_maxPNTrianglesTessellationLevel;
-    cls_glconfig.unk_70                 = glConfig_pnTrianglesNormalMode;
-    cls_glconfig.unk_74                 = glConfig_pnTrianglesPointMode;
-    cls_glconfig.unk_78                 = glConfig_ATIVertexArrayObject;
-    cls_glconfig.unk_7C                 = glConfig_ATIElementArray;
-    cls_glconfig.unk_80                 = glConfig_ATIFragmentShader;
-
-    cls_glconfig.vidWidth               = dwStyle;
-    cls_glconfig.vidHeight              = dwExStyle;
-    cls_glconfig.windowAspect           = glConfig_windowAspect;
-    cls_glconfig.displayFrequency       = glConfig_displayFrequency;
-    cls_glconfig.isFullscreen           = glConfig_isFullscreen;
-    cls_glconfig.stereoEnabled          = glConfig_stereoEnabled;
-
+    CL_CopyRendererConfig( &cls_glconfig );
     cls_glconfig_vidWidth  = cls_glconfig.vidWidth;
     cls_glconfig_vidHeight = cls_glconfig.vidHeight;
     dword_15CA628          = cls_glconfig.stereoEnabled;
@@ -228,9 +236,9 @@ int dword_142F780[768];
 float yaw;          /* 0x01432A44 cl.snap.ps.viewangles[YAW] */
 float leanFrac;     /* 0x014329C0 cl.snap.ps.leanFraction */
 
-int cl_snap_valid[2112];
+int cl_snap_valid[2112 + PLAYERSTATE_EXTRA_BYTES / 4];
 
-int cl_gameState_stringOffsets[6049];   /* 0x5E84 bytes, 0x01434A7C */
+int cl_gameState_stringOffsets[GS_SIZE / 4];   /* 0x5E84 bytes, 0x01434A7C */
 
 /* g_color_table (0x00541950) is universal/q_shared.c's, in the .rdata block it
  * shares with the colorBlack run. */

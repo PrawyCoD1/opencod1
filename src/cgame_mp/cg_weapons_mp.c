@@ -279,7 +279,7 @@ CG_ASSERT_SIZE( cgDObjModel_t, 12 );
 
 /* bg_itemlist is 70 rows; CG_RegisterItems walks 1..69 (0x300361C5). */
 #ifndef MAX_ITEMS
-#define MAX_ITEMS               70
+#define MAX_ITEMS               BG_NUM_ITEMS
 #endif
 
 #define CS_ITEMS                8           /* CG_RegisterItems 0x3003616D */
@@ -732,10 +732,10 @@ void CG_RegisterWeapon( int weaponNum ) {
 	memset( cgWeapon, 0, sizeof( *cgWeapon ) );
 	cgWeapon->registered = qtrue;
 
-	item = &bg_itemlist[weaponNum];
-	itemInfo = &cg_items[weaponNum];
+	item = &bg_itemlist[BG_WeaponItemIndex( weaponNum )];
+	itemInfo = &cg_items[BG_WeaponItemIndex( weaponNum )];
 	cgWeapon->item = item;
-	CG_RegisterItemVisuals( weaponNum );
+	CG_RegisterItemVisuals( BG_WeaponItemIndex( weaponNum ) );
 	cgWeapon->lastWeapAnim = -1;
 
 	if ( weaponInfo->gunModel[0] ) {
@@ -1134,6 +1134,10 @@ void CG_RegisterItemVisuals( int itemNum ) {
 	cgItemInfo_t    *itemInfo;
 	gitem_t         *item;
 	int i;
+	if ( (unsigned)itemNum >= BG_NUM_ITEMS ) {
+		CG_Error( "Item index out of range: %i", itemNum );
+		return;
+	}
 
 	itemInfo = &cg_items[itemNum];
 	if ( itemInfo->registered ) {
@@ -1141,7 +1145,7 @@ void CG_RegisterItemVisuals( int itemNum ) {
 	}
 
 	item = &bg_itemlist[itemNum];
-	memset( itemInfo, 0, sizeof( &itemInfo ) );
+	memset( itemInfo, 0, sizeof( *itemInfo ) );
 
 	for ( i = 0; i < MAX_ITEM_MODELS; i++ ) {
 		if ( item->world_model[i] && item->world_model[i][0] ) {
@@ -1172,7 +1176,7 @@ visuals of every item the server says is in the level.
 ==============
 */
 void CG_RegisterItems( void ) {
-	char items[256 + 1];    /* RTCW's MAX_ITEMS + 1; frame is 0x108 (0x30036150) */
+	char items[BG_NUM_ITEMS + 1];    /* RTCW's MAX_ITEMS + 1; frame is 0x108 (0x30036150) */
 	int value;
 	int i;
 

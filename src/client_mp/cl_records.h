@@ -1,5 +1,6 @@
 #ifndef CL_RECORDS_H
 #define CL_RECORDS_H
+#include "../universal/protocol_limits.h"
 
 #define ES_NUMBER               0x00
 #define ES_EFLAGS               0x08
@@ -18,22 +19,22 @@
 #define SNAP_DELTANUM           0x0010
 #define SNAP_PING               0x0014
 #define SNAP_PS                 0x001C
-#define SNAP_NUMENTITIES        0x20EC
-#define SNAP_NUMCLIENTS         0x20F0
-#define SNAP_PARSEENTITIESNUM   0x20F4
-#define SNAP_PARSECLIENTSNUM    0x20F8
-#define SNAP_SERVERCOMMANDNUM   0x20FC
-#define SNAP_SIZE               0x2100
+#define SNAP_NUMENTITIES        ( 0x20EC + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_NUMCLIENTS         ( 0x20F0 + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_PARSEENTITIESNUM   ( 0x20F4 + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_PARSECLIENTSNUM    ( 0x20F8 + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_SERVERCOMMANDNUM   ( 0x20FC + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_SIZE               ( 0x2100 + PLAYERSTATE_EXTRA_BYTES )
 
 #define SNAP_OUT_SNAPFLAGS      0x00000
 #define SNAP_OUT_PING           0x00004
 #define SNAP_OUT_SERVERTIME     0x00008
 #define SNAP_OUT_PS             0x0000C
-#define SNAP_OUT_NUMENTITIES    0x020DC
-#define SNAP_OUT_NUMCLIENTS     0x020E0
-#define SNAP_OUT_ENTITIES       0x020E4
-#define SNAP_OUT_CLIENTS        0x110E4
-#define SNAP_OUT_CMDSEQUENCE    0x127E8
+#define SNAP_OUT_NUMENTITIES    ( 0x020DC + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_OUT_NUMCLIENTS     ( 0x020E0 + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_OUT_ENTITIES       ( 0x020E4 + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_OUT_CLIENTS        ( 0x110E4 + PLAYERSTATE_EXTRA_BYTES )
+#define SNAP_OUT_CMDSEQUENCE    ( 0x127E8 + PLAYERSTATE_EXTRA_BYTES )
 
 #define MAX_ENTITIES_IN_SNAPSHOT  0x100
 #define MAX_CLIENTS_IN_SNAPSHOT   0x40
@@ -42,11 +43,10 @@
 
 #define GS_STRINGOFFSETS        0x0000
 #define GS_STRINGDATA           0x2000
-#define GS_DATACOUNT            0x5E80
-#define GS_SIZE                 0x5E84
+#define GS_DATACOUNT            ( GS_STRINGDATA + EXTENDED_MAX_GAMESTATE_CHARS )
+#define GS_SIZE                 ( GS_DATACOUNT + 4 )
 #define CS_SYSTEMINFO           1
 #define MAX_CONFIGSTRINGS       0x800
-#define MAX_GAMESTATE_CHARS     0x3E80
 
 #define cl_gameState_stringData \
 	( (char *)cl_gameState_stringOffsets + GS_STRINGDATA )

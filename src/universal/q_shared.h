@@ -371,6 +371,11 @@ typedef struct hudElemState_t
 } hudElemState_t;
 COD1_ASSERT_SIZE( hudElemState_t, 6944 );
 
+#include "protocol_limits.h"
+#define WEAPON_SLOTS EXTENDED_MAX_WEAPONS
+#define WEAPON_MASK_WORDS ( WEAPON_SLOTS / 32 )
+#define PLAYERSTATE_EXTRA_BYTES 1584
+
 typedef struct playerState_s
 {
 	int commandTime;
@@ -425,11 +430,11 @@ typedef struct playerState_s
 	int damagePitch;
 	int damageCount;
 	int stats[6];
-	int ammo[64];
-	int ammoclip[64];
-	unsigned int weapons[2];
+	int ammo[WEAPON_SLOTS];
+	int ammoclip[WEAPON_SLOTS];
+	unsigned int weapons[WEAPON_MASK_WORDS];
 	byte weaponslots[8];
-	unsigned int weaponrechamber[2];
+	unsigned int weaponrechamber[WEAPON_MASK_WORDS];
 	vec3_t mins;
 	vec3_t maxs;
 	int proneViewHeight;
@@ -471,7 +476,7 @@ typedef struct playerState_s
 	int ping;
 	int deltaTime;
 } playerState_t;
-COD1_ASSERT_SIZE( playerState_t, 8400 );
+COD1_ASSERT_SIZE( playerState_t, 8400 + PLAYERSTATE_EXTRA_BYTES );
 
 /*
 =============================================================================

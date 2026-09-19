@@ -12,6 +12,7 @@
 #define __QCOMMON_H__
 
 #include "../universal/q_shared.h"
+#include "../universal/protocol_limits.h"
 #include "cod1_types.h"
 
 #include <stddef.h>
@@ -132,7 +133,8 @@ COD1_ASSERT_SIZE( cmd_function_t, 12 );
 enum
 {
 	MAX_PACKETLEN = 0x578,
-	MAX_MSGLEN    = 0x4000,
+	STOCK_MAX_MSGLEN = 0x4000,
+	MAX_MSGLEN    = 131072,
 	FRAGMENT_SIZE = 0x514,
 	FRAGMENT_BIT  = 0x80000000,
 };
@@ -181,8 +183,9 @@ typedef struct msg_t
 	int cursize;
 	int readcount;
 	int bit;
+	qboolean extended;
 } msg_t;
-COD1_ASSERT_SIZE( msg_t, 24 );
+COD1_ASSERT_SIZE( msg_t, 28 );
 
 typedef struct netProfilePacket_t
 {
@@ -229,8 +232,29 @@ typedef struct netchan_t
 	int unsentLength;
 	byte unsentBuffer[MAX_MSGLEN];
 	netProfileInfo_t *pProf;
+	qboolean extended;
 } netchan_t;
-COD1_ASSERT_SIZE( netchan_t, 32832 );
+COD1_ASSERT_SIZE( netchan_t, 2 * MAX_MSGLEN + 68 );
+
+/* Identity received before gamestate; -1 selects the stock wire format. */
+extern int clc_serverBuild;
+
+/* SERVERBUILD is a non-negative decimal integer. Return -1 for a missing or
+ * malformed marker; build zero is distinct from a stock connection. */
+static int Net_ParseServerBuild( const char *value ) {
+	unsigned int build = 0;
+	if ( !value || !*value ) {
+		return -1;
+	}
+	while ( *value ) {
+		unsigned int digit = (unsigned char)*value++ - '0';
+		if ( digit > 9 || build > ( 2147483647U - digit ) / 10U ) {
+			return -1;
+		}
+		build = build * 10U + digit;
+	}
+	return (int)build;
+}
 typedef struct netField_t
 {
 	const char      *name;

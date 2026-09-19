@@ -450,6 +450,9 @@ void SV_Hunk_FreeTempMemoryInternal( void *buf ) {
 /* ---- SV_LocateGameData  0x00455EC0 ---- */
 void SV_LocateGameData( gentity_t *gEnts, int numGEntities, int sizeofGEntity,
 						playerState_t *clients, int sizeofGameClient ) {
+	if ( sizeofGameClient != sizeof( gclient_t ) || sizeofGEntity != sizeof( gentity_t ) ) {
+		Com_Error( ERR_DROP, "This server requires the updated game DLL" );
+	}
 	sv.gentities = gEnts;
 	sv.gentitySize = sizeofGEntity;
 	sv.num_entities = numGEntities;

@@ -77,21 +77,9 @@
    import block. */
 static void ( *scr_cgameExports[5] )( void );                                           /* 0x300AAAE0 */
 
-/*
- * THE 102 SLOTS BELOW MUST BE ONE CONTIGUOUS RUN, IN THIS ORDER.  Scr_FarHook
- * memcpy's 0x198 bytes over them starting at &Scr_GetBool, which is what the
- * engine's Scr_NearHook block expects and what retail has at 0x300AAAF8.  As 102
- * separate objects that is undefined -- C promises nothing about where distinct
- * globals land relative to each other -- and a linker that puts the slots
- * other translation units reference BELOW Scr_GetBool has the copy fill the
- * run above them and leave every called slot null.
- *
- * A named bss segment pins it: MSVC emits a segment's variables in declaration
- * order and the linker keeps one object file's contribution to a section
- * contiguous.  Retail almost certainly had a struct here -- the block is one
- * object in the image.
- */
-#pragma bss_seg( ".scrimp" )
+/* Script imports retain their retail slot order. Scr_FarHook copies each
+ * independent pointer without assuming linker adjacency. */
+
 int         ( *Scr_GetBool )( unsigned int num );                                       /* 0x300AAAF8 [1] */
 int         ( *Scr_GetInt )( unsigned int num );                                        /* 0x300AAAFC [1] */
 scr_anim_t  ( *Scr_GetAnim )( unsigned int num, void *anims );                          /* 0x300AAB00 [2] */
@@ -196,7 +184,7 @@ int         ( *Scr_GetAnimsIndex )( int anims );                                
 void        ( *Scr_GetAnims )();                                                        /* 0x300AAC84 [1] */
 void        *( *MT_Alloc )( int size, int type );                                       /* 0x300AAC88 [2] */
 void        ( *MT_Free )( void *p, int size );                                          /* 0x300AAC8C [2] */
-#pragma bss_seg()
+
 
 /*
  * ---------------------------------------------------------------------------
@@ -269,7 +257,115 @@ typedef enum scrExport_e {
    `void *Scr_FarHook( void * )`. */
 int *Scr_FarHook( const void *hooks ) {
 	if ( hooks ) {
-		memcpy( &Scr_GetBool, hooks, SCR_IMPORT_BLOCK_SIZE );
+		/* Import globals need not be adjacent, especially with sanitizer redzones. */
+		static void *const destinations[] = {
+			&Scr_GetBool,
+			&Scr_GetInt,
+			&Scr_GetAnim,
+			&Scr_GetAnimTree,
+			&Scr_GetFloat,
+			&Scr_GetString,
+			&Scr_GetConstString,
+			&Scr_GetDebugString,
+			&Scr_GetIString,
+			&Scr_GetConstIString,
+			&Scr_GetVector,
+			&Scr_GetFunc,
+			&Scr_GetType,
+			&Scr_GetPointerType,
+			&Scr_GetEntityNum,
+			&Scr_GetNumParam,
+			&Scr_AddBool,
+			&Scr_AddInt,
+			&Scr_AddFloat,
+			&Scr_AddAnim,
+			&Scr_AddUndefined,
+			&Scr_AddEntityNum,
+			&Scr_AddStruct,
+			&Scr_AddString,
+			&Scr_AddIString,
+			&Scr_AddConstString,
+			&Scr_AddVector,
+			&Scr_AddObject,
+			&Scr_AddArray,
+			&Scr_AddArrayStringIndexed,
+			&Scr_MakeArray,
+			&Scr_BeginLoadScripts,
+			&Scr_BeginLoadAnimTrees,
+			&Scr_EndLoadScripts,
+			&Scr_EndLoadAnimTrees,
+			&Scr_PrecacheAnimTrees,
+			&Scr_FreeScripts,
+			&Scr_FreeGameVariable,
+			&Scr_ShutdownSystem,
+			&Scr_IsSystemActive,
+			&Scr_AddExecThread,
+			&Scr_AddExecEntThreadNum,
+			&Scr_ExecThread,
+			&Scr_ExecEntThreadNum,
+			&Scr_IsThreadAlive,
+			&Scr_Error,
+			&Scr_ErrorWithDialogMessage,
+			&Scr_ParamError,
+			&Scr_ObjectError,
+			&Scr_SetDynamicEntityField,
+			&Scr_FreeEntityNum,
+			&Scr_GetEntityId,
+			&Scr_SetClassMap,
+			&Scr_RemoveClassMap,
+			&Scr_Unused36,
+			&Scr_Unused37,
+			&Scr_AddClassField,
+			&Scr_AddFields,
+			&Scr_FindField,
+			&Scr_GetOffset,
+			&Scr_CopyEntityNum,
+			&Scr_Init,
+			&Scr_Shutdown,
+			&Scr_Abort,
+			&Scr_SetLoading,
+			&Scr_AllocGameVariable,
+			&Scr_InitSystem,
+			&Scr_GetChecksum,
+			&Scr_HasSourceFiles,
+			&Scr_SaveSource,
+			&Scr_LoadSource,
+			&Scr_SkipSource,
+			&Scr_SavePre,
+			&Scr_SavePost,
+			&Scr_SaveShutdown,
+			&Scr_Unused4B,
+			&Scr_LoadPre,
+			&Scr_LoadShutdown,
+			&Scr_Unused4E,
+			&Scr_LoadScript,
+			&Scr_FindAnimTree,
+			&Scr_FindAnim,
+			&Scr_GetFunctionHandle,
+			&Scr_FreeThread,
+			&Scr_ConvertThreadToSave,
+			&Scr_ConvertThreadFromLoad,
+			&Scr_SetString,
+			&Scr_AllocString,
+			&Scr_NotifyNum,
+			&Scr_NotifyId,
+			&SL_ConvertToString,
+			&SL_GetString,
+			&SL_GetLowercaseString,
+			&SL_FindLowercaseString,
+			&Scr_CreateCanonicalFilename,
+			&Scr_SetTime,
+			&Scr_RunCurrentThreads,
+			&Scr_ResetTimeout,
+			&Scr_GetAnimsIndex,
+			&Scr_GetAnims,
+			&MT_Alloc,
+			&MT_Free,
+		};
+		unsigned int i;
+		for ( i = 0; i < sizeof( destinations ) / sizeof( destinations[0] ); i++ ) {
+			memcpy( destinations[i], (const char *)hooks + i * sizeof( void * ), sizeof( void * ) );
+		}
 	}
 
 	scr_cgameExports[SCR_EXP_GET_FUNCTION] = (void ( * )( void ))Scr_GetFunction;

@@ -24,6 +24,10 @@ typedef struct vm_s {
 vm_t    *currentVM = NULL;
 static vm_t vmTable[MAX_VM];
 
+const char *VM_DllPath( const vm_t *vm ) {
+	return vm ? vm->fqpath : "(no cgame loaded)";
+}
+
 /* ---- VM_Init  0x00460210 ---- */
 void VM_Init( void ) {
 	Com_Memset( vmTable, 0, sizeof( vmTable ) );

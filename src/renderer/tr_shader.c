@@ -8249,7 +8249,8 @@ LABEL_31:
   v14 = tr_collapseRules[v7].collapsedStateBits;
   LOBYTE(dword_11E6FA4) = 0;
   dword_11E6FA4 |= v14;
-  memcpy(&dword_11E6FA8, &unk_11E7630, 0x2730u);
+  /* Removing stage 1 shifts the remaining stages within the same buffer. */
+  memmove(&dword_11E6FA8, &unk_11E7630, 0x2730u);
   memset(&unk_11E96D8, 0, 0x688u);
   return 1;
 }
@@ -8551,7 +8552,8 @@ LABEL_59:
     }
     else
     {
-      memcpy(v3, v2, 1672 * (7 - v0));
+      /* Source and destination overlap when more than one stage remains. */
+      memmove(v3, v2, 1672 * (7 - v0));
       v4 = 7;
       v5 = &unk_11E96D8;
       while ( (*v5 & 1) == 0 )
@@ -8561,7 +8563,7 @@ LABEL_59:
         if ( v4 <= v0 )
           goto LABEL_17;
       }
-      memset(shaderParseStageStorage[418 * v4], 0, 0x688u);
+      memset(&shaderParseStageStorage[418 * v4], 0, 0x688u);
 LABEL_17:
       --v0;
       v3 -= 418;

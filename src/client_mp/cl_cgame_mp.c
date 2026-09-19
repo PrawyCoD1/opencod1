@@ -13,6 +13,8 @@
 #include "cl_conwindows.h"
 #include "../universal/com_sndalias.h"
 
+extern const char *VM_DllPath( const vm_t *vm );
+
 extern int (*Material_RegisterHandle)();   /* 0x01432874, indirect call target */
 extern int (*cgame_RestoreExportTable)();   /* 0x014328C0, indirect call target */
 extern int (*cgame_SaveExportTable)();   /* 0x014328BC, indirect call target */
@@ -118,7 +120,7 @@ extern int cl_parseClientsNum;   /* 0x0143A944, 48 bytes */
 extern int cl_parseEntitiesNum;   /* 0x0143A940, 4 bytes */
 extern char cl_snap_messageNum[4];   /* 0x01432970, 4 bytes */
 extern int cl_snap_serverTime;   /* 0x0143296C, 4 bytes */
-extern int cl_snapshots[67584];   /* 0x0143B134, 270336 bytes */
+extern int cl_snapshots[67584 + 32 * PLAYERSTATE_EXTRA_BYTES / 4];   /* 0x0143B134, 270336 bytes */
 extern unsigned char stru_143A9B0[UCMD_SIZE * CMD_BACKUP];
 
 extern int CIN_DrawCinematic();
@@ -299,6 +301,16 @@ qboolean CL_GetUserCmd( int cmdNumber, byte *ucmd )
 	return qtrue;
 }
 
+void CL_GetGameState( void *gs );
+
+static void CL_GetExtendedGameState( void *gs, int size ) {
+	if ( size != GS_SIZE ) {
+		Com_Error( ERR_DROP, "Cgame gamestate layout mismatch" );
+		return;
+	}
+	memcpy( gs, cl_gameState_stringOffsets, GS_SIZE );
+}
+
 /* ---- CL_GetCurrentCmdNumber  0x004010F0 ----  [CONFIRMED] */
 int __cdecl CL_GetCurrentCmdNumber()
 {
@@ -348,7 +360,7 @@ qboolean CL_GetSnapshot( int snapshotNumber, byte *snapshot )
 	*(int *)( snapshot + SNAP_OUT_PING )        = *(const int *)( clSnap + SNAP_PING );
 	*(int *)( snapshot + SNAP_OUT_SERVERTIME )  = *(const int *)( clSnap + SNAP_SERVERTIME );
 
-	Com_Memcpy( snapshot + SNAP_OUT_PS, clSnap + SNAP_PS, 0x834 * 4 );
+	Com_Memcpy( snapshot + SNAP_OUT_PS, clSnap + SNAP_PS, sizeof( playerState_t ) );
 
 	count = *(const int *)( clSnap + SNAP_NUMENTITIES );
 	if ( count > MAX_ENTITIES_IN_SNAPSHOT ) {
@@ -463,7 +475,7 @@ void CL_ConfigstringModified( void )
 
 		len = strlen( dup );
 
-		if ( len + 1 + cl_gameState_dataCount > MAX_GAMESTATE_CHARS ) {
+		if ( len + 1 + cl_gameState_dataCount > Protocol_GameStateLimit( clc_serverBuild >= 0 ) ) {
 			Com_Error( ERR_DROP, "\x15" "MAX_GAMESTATE_CHARS exceeded" );
 		}
 
@@ -1425,17 +1437,26 @@ int __cdecl CL_CgameSystemCalls(int *args)
     case 78:
       qmemcpy((void *)args[1], &cls_glconfig, 0xA0u);
       goto LABEL_326;
+    case 300:
+      CL_GetExtendedGameState((void *)args[1], args[2]);
+      goto LABEL_326;
     case 79:
-      qmemcpy((void *)args[1], cl_gameState_stringOffsets, 0x5E84u);
+      CL_GetGameState((void *)args[1]);
       goto LABEL_326;
     case 80:
       v41 = (_DWORD *)args[2];
       *(_DWORD *)args[1] = *(_DWORD *)cl_snap_messageNum;
       *v41 = cl_snap_serverTime;
       goto LABEL_326;
-    case 81:
+    case 301:
+      if ( args[3] != 0x127EC + PLAYERSTATE_EXTRA_BYTES ) {
+        Com_Error( ERR_DROP, "Cgame snapshot layout mismatch" );
+      }
       LODWORD(v28) = CL_GetSnapshot(args[1], (byte *)args[2]);   /* snapshotNumber@<eax>, 0x00402F71 */
       return v28;
+    case 81:
+      Com_Error( ERR_DROP, "Outdated cgame snapshot interface (81). Loaded DLL:\n%s\nInstall the updated cgame in the active game folder/PK3.", VM_DllPath( cgvm ) );
+      return 0;
     case 82:
       LODWORD(v28) = CL_GetServerCommand(args[1]);   /* @<eax>, 0x00402F96 */
       return v28;
@@ -2576,7 +2597,13 @@ float sub_401050( float f ) {
 
 /* ---- CL_GetGameState  0x00401060 ----  VERIFIED */
 void CL_GetGameState( void *gs ) {
-	memcpy( gs, cl_gameState_stringOffsets, 0x5E84 );
+	/* Legacy cgame syscall: never copy the expanded structure into a stock DLL. */
+	if ( cl_gameState_dataCount > STOCK_MAX_GAMESTATE_CHARS ) {
+		Com_Error( ERR_DROP, "This server requires the updated cgame DLL" );
+		return;
+	}
+	memcpy( gs, cl_gameState_stringOffsets, 0x5E80 );
+	*(int *)( (byte *)gs + 0x5E80 ) = cl_gameState_dataCount;
 }
 
 /* ---- CL_GetGlconfig_cgame  0x00401080 ----  VERIFIED */

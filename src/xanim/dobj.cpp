@@ -2189,7 +2189,11 @@ int __cdecl DObjGetSurfaces( unsigned int *partBits, DObj *dobj, DObjSurfaceRef 
                     for ( k = 1; k <= extraWords; ++k ) {
                         partBits[destWord + k] |= ( bits[k] << shift ) | ( bits[k - 1] >> carryShift );
                     }
-                    partBits[destWord + extraWords + 1] |= bits[extraWords] >> carryShift;
+                    /* The final partial source word may end in the last mask
+                     * word. Its carry is then outside the 128-bit destination. */
+                    if ( destWord + extraWords + 1 < 4 ) {
+                        partBits[destWord + extraWords + 1] |= bits[extraWords] >> carryShift;
+                    }
                 }
             } else {
                 for ( i = 0; i < surfaceCount; ++i, ++outIndex ) {

@@ -62,16 +62,17 @@ void CG_CheckAmmo( void ) {
 	// see about how many seconds of ammo we have remaining
 	memcpy( weapons, cg.snap->ps.weapons, sizeof( weapons ) );
 
-	if ( !weapons[0] && !weapons[1] ) {     // we start out with no weapons, so don't click on startup
+	for ( i = 0; i < WEAPON_MASK_WORDS && !weapons[i]; i++ ) {}
+	if ( i == WEAPON_MASK_WORDS ) {     // we start out with no weapons, so don't click on startup
 		return;
 	}
 
 	total = 0;
 
 	// weapon 0 is "none"
-	for ( i = 1 ; i < bg_numWeapons ; i++ )
+	for ( i = 1 ; i <= bg_numWeapons ; i++ )
 	{
-		if ( !( weapons[0] & ( 1 << i ) ) ) {
+		if ( !( weapons[i >> 5] & ( 1u << ( i & 31 ) ) ) ) {
 			continue;
 		}
 
@@ -216,6 +217,15 @@ void CG_Respawn( void ) {
 	trap_Cvar_Set( "cg_weaponSelect", va( "%i", cg.snap->ps.weapon ) );
 	trap_Cvar_Set( "cl_stance", "0" );
 	trap_Cvar_Set( "cl_run", "1" );
+
+	/* Match the original autorecord hook's respawn flags exactly. */
+	if ( !cg.demoPlayback && cg.snap->ps.pm_flags == 0x40000 ) {
+		char autorecord[16];
+		trap_Cvar_VariableStringBuffer( "cl_autorecord", autorecord, sizeof( autorecord ) );
+		if ( atoi( autorecord ) ) {
+			trap_SendConsoleCommand( "autorecord_respawn\n" );
+		}
+	}
 }
 
 /*

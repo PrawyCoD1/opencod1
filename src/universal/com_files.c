@@ -749,7 +749,7 @@ int FS_FOpenFileRead_Internal( const char *qpath, fileHandle_t *file, qboolean u
 						Unz_OpenCurrentFile( fsh[*file].handleFiles.file.z );
 						fsh[*file].zipFilePos = pakFile->zipPosition;
 
-						if ( fs_debug->integer && !filter_flag ) {
+						if ( ( fs_debug->integer || !Q_stricmp( qpath, "cgame_mp_x86.dll" ) ) && !filter_flag ) {
 							Com_Printf( "FS_FOpenFileRead: %s (found in '%s')\n", qpath, pak->pakFilename );
 						}
 						return Unz_GetCurrentFileUncompressedSize( fsh[*file].handleFiles.file.z );
@@ -773,7 +773,7 @@ int FS_FOpenFileRead_Internal( const char *qpath, fileHandle_t *file, qboolean u
 				if ( fsh[*file].handleFiles.file.o ) {
 					Q_strncpyz( fsh[*file].name, qpath, sizeof( fsh[*file].name ) );
 					fsh[*file].zipFile = qfalse;
-					if ( fs_debug->integer && !filter_flag ) {
+					if ( ( fs_debug->integer || !Q_stricmp( qpath, "cgame_mp_x86.dll" ) ) && !filter_flag ) {
 						Com_Printf( "FS_FOpenFileRead: %s (found in '%s/%s')\n",
 									qpath, dir->path, dir->gamedir );
 					}

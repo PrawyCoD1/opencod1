@@ -288,7 +288,11 @@ void Netchan_TransmitNextFragment( netchan_t *chan ) {
 		fragmentLength = chan->unsentLength - chan->unsentFragmentStart;
 	}
 
-	MSG_WriteShort( &send, chan->unsentFragmentStart );
+	if ( chan->extended ) {
+		MSG_WriteLong( &send, chan->unsentFragmentStart );
+	} else {
+		MSG_WriteShort( &send, chan->unsentFragmentStart );
+	}
 	MSG_WriteShort( &send, fragmentLength );
 	MSG_WriteData( &send, fragmentLength, &chan->unsentBuffer[chan->unsentFragmentStart] );
 
@@ -315,7 +319,7 @@ void Netchan_Transmit( netchan_t *chan, int length, const byte *data ) {
 	msg_t send;
 	byte send_buf[MAX_PACKETLEN];
 
-	if ( length > MAX_MSGLEN ) {
+	if ( length < 0 || length > ( chan->extended ? MAX_MSGLEN : STOCK_MAX_MSGLEN ) ) {
 		Com_Error( ERR_DROP, "\x15" "Netchan_Transmit: length = %i", length );
 	}
 
@@ -373,7 +377,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 	}
 
 	if ( fragmented ) {
-		fragmentStart = MSG_ReadShort( msg );
+		fragmentStart = chan->extended ? MSG_ReadLong( msg ) : MSG_ReadShort( msg );
 		fragmentLength = MSG_ReadShort( msg );
 	} else {
 		fragmentStart = 0;
@@ -427,9 +431,9 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 		return qfalse;
 	}
 
-	if ( fragmentLength < 0
+	if ( fragmentStart < 0 || fragmentLength < 0
 		 || msg->readcount + fragmentLength > msg->cursize
-		 || (unsigned int)( chan->fragmentLength + fragmentLength ) > MAX_MSGLEN ) {
+		 || (unsigned int)( chan->fragmentLength + fragmentLength ) > ( chan->extended ? MAX_MSGLEN : STOCK_MAX_MSGLEN ) ) {
 		if ( showdrop->integer || showpackets->integer ) {
 			Com_Printf( "%s:illegal fragment length\n",
 						NET_AdrToString( chan->remoteAddress ) );
@@ -445,7 +449,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 		return qfalse;
 	}
 
-	if ( chan->fragmentLength > msg->maxsize ) {
+	if ( msg->maxsize < 4 || chan->fragmentLength > msg->maxsize - 4 ) {
 		Com_Printf( "%s:fragmentLength %i > msg->maxsize\n",
 					NET_AdrToString( chan->remoteAddress ), chan->fragmentLength );
 		return qfalse;

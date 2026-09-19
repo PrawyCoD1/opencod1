@@ -557,7 +557,7 @@ static const parseField_t bg_weaponInfoFields[] =
    uses, not a sizeof. */
 extern gitem_t bg_itemlist[];                   /* bg_misc.c, 0x2006BB68 */
 
-#define BG_NUM_ITEMS                70
+
 
 /*
 =============================================================================
@@ -858,7 +858,7 @@ void BG_FillInWeaponItems( void ) {
 	int i, j;
 
 	for ( i = 1; i <= bg_numWeapons; i++ ) {
-		item = &bg_itemlist[i];
+		item = &bg_itemlist[BG_WeaponItemIndex( i )];
 		weaponInfo = bg_weaponInfo[i];
 
 		item->classname = weaponInfo->radiantName;
@@ -875,7 +875,7 @@ void BG_FillInWeaponItems( void ) {
 		item->giClipIndex = weaponInfo->clipIndex;
 	}
 
-	for ( ; i < BG_NUM_ITEMS; i++ ) {
+	for ( i = 65; i < 70; i++ ) {
 		item = &bg_itemlist[i];
 		if ( item->giType != IT_AMMO ) {
 			continue;
@@ -1149,7 +1149,7 @@ frame+0x108).  It also has neither Com_DPrintf: "----------------------" and
 void BG_SetupWeaponInfo( void ) {
 	char *weaponFiles[MAX_WEAPONS - 1];
 #ifndef CGAMEDLL
-	char filelist[4096];
+	char filelist[16384];
 #endif
 	char bigstring[8196];
 #ifndef CGAMEDLL
@@ -1199,7 +1199,7 @@ void BG_SetupWeaponInfo( void ) {
 		 * configstring; the split is destructive and runs in place.  A run of
 		 * two spaces produces no entry, and a trailing space ends the scan.
 		 */
-		strcpy( bigstring, CG_ConfigString( CS_WEAPONFILES ) );
+		Q_strncpyz( bigstring, CG_ConfigString( CS_WEAPONFILES ), sizeof( bigstring ) );
 
 		weaponFiles[0] = bigstring;
 		numWeaponFiles = 1;
@@ -1211,6 +1211,9 @@ void BG_SetupWeaponInfo( void ) {
 					break;
 				}
 				if ( *p != ' ' ) {
+					if ( numWeaponFiles >= MAX_WEAPONS - 1 ) {
+						Com_Error( ERR_DROP, "Too many weapon files" );
+					}
 					weaponFiles[numWeaponFiles++] = p;
 				}
 			} else {
@@ -1242,9 +1245,12 @@ void BG_SetupWeaponInfo( void ) {
 		bigstring[0] = 0;
 		for ( i = 0; i < numWeaponFiles; i++ ) {
 			if ( i > 0 ) {
-				strcat( bigstring, " " );
+				Q_strcat( bigstring, sizeof( bigstring ), " " );
 			}
-			strcat( bigstring, weaponFiles[i] );
+			if ( strlen( bigstring ) + strlen( weaponFiles[i] ) + 1 >= 8192 ) {
+				Com_Error( ERR_DROP, "Weapon file list exceeds configstring capacity" );
+			}
+			Q_strcat( bigstring, sizeof( bigstring ), weaponFiles[i] );
 		}
 		trap_SetConfigstring( CS_WEAPONFILES, bigstring );
 #endif
@@ -1408,7 +1414,7 @@ qboolean BG_GivePlayerWeapon( playerState_t *ps, int weapon ) {
 	}
 
 #ifndef CGAMEDLL
-	RegisterItem( weapon, qtrue );
+	RegisterItem( BG_WeaponItemIndex( weapon ), qtrue );
 #endif
 	ps->weapons[word] |= bit;
 	ps->weaponrechamber[word] &= ~bit;
@@ -1438,7 +1444,7 @@ qboolean BG_GivePlayerWeapon( playerState_t *ps, int weapon ) {
 			break;
 		}
 #ifndef CGAMEDLL
-		RegisterItem( alt, qtrue );
+		RegisterItem( BG_WeaponItemIndex( alt ), qtrue );
 #endif
 		ps->weapons[alt >> 5] |= 1 << ( alt & 31 );
 		/* retail clears the bit of the weapon that was granted first, not the

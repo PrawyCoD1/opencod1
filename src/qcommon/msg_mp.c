@@ -234,109 +234,109 @@ netField_t clientStateFields[MSG_CLIENT_FIELDS] = {
 };
 
 static netField_t msg_playerStateFields[MSG_PLAYERSTATE_FIELDS] = {
-	{ "commandTime",             0, 32 },
-	{ "origin[1]",              24,  0 },
-	{ "origin[0]",              20,  0 },
-	{ "origin[2]",              28,  0 },
-	{ "viewangles[1]",         196,  0 },
-	{ "viewangles[0]",         192,  0 },
-	{ "iCompassFriendInfo",    960, 32 },
-	{ "eFlags",                128, 24 },
-	{ "bobCycle",                8,  8 },
-	{ "viewHeightCurrent",     208,  0 },
-	{ "eventSequence",         132,  8 },
-	{ "legsAnim",              112, 10 },
-	{ "pm_flags",               12, 19 },
-	{ "delta_angles[1]",        76, 16 },
-	{ "velocity[1]",            36,  0 },
-	{ "velocity[0]",            32,  0 },
-	{ "speed",                  68, 16 },
-	{ "mins[0]",               804,  0 },
-	{ "mins[1]",               808,  0 },
-	{ "maxs[0]",               816,  0 },
-	{ "maxs[1]",               820,  0 },
-	{ "maxs[2]",               824,  0 },
-	{ "proneViewHeight",       828, -8 },
-	{ "crouchViewHeight",      832, -8 },
-	{ "standViewHeight",       836, -8 },
-	{ "deadViewHeight",        840, -8 },
-	{ "walkSpeedScale",        844,  0 },
-	{ "runSpeedScale",         848,  0 },
-	{ "proneSpeedScale",       852,  0 },
-	{ "crouchSpeedScale",      856,  0 },
-	{ "strafeSpeedScale",      860,  0 },
-	{ "backSpeedScale",        864,  0 },
-	{ "leanSpeedScale",        868,  0 },
-	{ "friction",              892,  0 },
-	{ "groundEntityNum",        84, 10 },
-	{ "viewHeightTarget",      204, -8 },
-	{ "events[0]",             136,  8 },
-	{ "weapons[0]",            780, 32 },
-	{ "weaponslots[0]",        788, 32 },
-	{ "gravity",                60, 16 },
-	{ "serverCursorHintString", 908, -8 },
-	{ "viewmodelIndex",        188,  8 },
-	{ "events[1]",             140,  8 },
-	{ "events[2]",             144,  8 },
-	{ "events[3]",             148,  8 },
-	{ "delta_angles[0]",        72, 16 },
-	{ "weapon",                176,  6 },
-	{ "movementDir",           124,  8 },
-	{ "viewHeightLerpTarget",  216, -8 },
-	{ "weaponslots[4]",        792, 32 },
-	{ "proneDirection",        872,  0 },
-	{ "aimSpreadScale",        984,  0 },
-	{ "weapAnim",              980, 10 },
-	{ "jumpTime",              100, 32 },
-	{ "velocity[2]",            40,  0 },
-	{ "weaponTime",             44, -16 },
-	{ "proneTorsoPitch",       880,  0 },
-	{ "proneDirectionPitch",   876,  0 },
-	{ "fTorsoPitch",           968,  0 },
-	{ "fWaistPitch",           972,  0 },
-	{ "fTorsoHeight",          964,  0 },
-	{ "weaponstate",           180,  4 },
-	{ "torsoTimer",            116, 16 },
-	{ "torsoAnim",             120, 10 },
-	{ "eventParms[0]",         152,  8 },
-	{ "vLadderVec[0]",          88,  0 },
-	{ "eventParms[3]",         164,  8 },
-	{ "viewHeightLerpDown",    220,  1 },
-	{ "weaponDelay",            48, -16 },
-	{ "eventParms[1]",         156,  8 },
-	{ "viewHeightLerpTime",    212, 32 },
-	{ "eventParms[2]",         160,  8 },
-	{ "vLadderVec[1]",          92,  0 },
-	{ "fWeaponPosFrac",        184,  0 },
-	{ "pm_type",                 4,  8 },
-	{ "legsTimer",             108, 16 },
-	{ "fJumpPeak",             104,  0 },
-	{ "leanf",                  64,  0 },
-	{ "damageEvent",           228,  8 },
-	{ "damageYaw",             232,  8 },
-	{ "damagePitch",           236,  8 },
-	{ "damageCount",           240,  7 },
-	{ "weaponrechamber[0]",    796, 32 },
-	{ "grenadeTimeLeft",        52, -16 },
-	{ "pm_time",                16, -16 },
-	{ "iFoliageSoundTime",      56, 32 },
-	{ "deltaTime",            8396, 32 },
-	{ "serverCursorHint",      900,  8 },
-	{ "serverCursorHintVal",   904,  8 },
-	{ "shellshockIndex",       988,  4 },
-	{ "shellshockTime",        992, 32 },
-	{ "shellshockDuration",    996, 16 },
-	{ "delta_angles[2]",        80, 16 },
-	{ "vLadderVec[2]",          96,  0 },
-	{ "clientNum",             172,  8 },
-	{ "weapons[1]",            784, 32 },
-	{ "weaponrechamber[1]",    800, 32 },
-	{ "viewangles[2]",         200,  0 },
-	{ "viewHeightLerpPosAdj",  224,  0 },
-	{ "mins[2]",               812,  0 },
-	{ "viewlocked",            884,  8 },
-	{ "viewlocked_entNum",     888, 16 },
-	{ "gunfx",                 896,  8 }
+	{ "commandTime",             offsetof( playerState_t, commandTime), 32 },
+	{ "origin[1]",              offsetof( playerState_t, origin[1]),  0 },
+	{ "origin[0]",              offsetof( playerState_t, origin[0]),  0 },
+	{ "origin[2]",              offsetof( playerState_t, origin[2]),  0 },
+	{ "viewangles[1]",         offsetof( playerState_t, viewangles[1]),  0 },
+	{ "viewangles[0]",         offsetof( playerState_t, viewangles[0]),  0 },
+	{ "iCompassFriendInfo",    offsetof( playerState_t, iCompassFriendInfo), 32 },
+	{ "eFlags",                offsetof( playerState_t, eFlags), 24 },
+	{ "bobCycle",                offsetof( playerState_t, bobCycle),  8 },
+	{ "viewHeightCurrent",     offsetof( playerState_t, viewHeightCurrent),  0 },
+	{ "eventSequence",         offsetof( playerState_t, eventSequence),  8 },
+	{ "legsAnim",              offsetof( playerState_t, legsAnim), 10 },
+	{ "pm_flags",               offsetof( playerState_t, pm_flags), 19 },
+	{ "delta_angles[1]",        offsetof( playerState_t, delta_angles[1]), 16 },
+	{ "velocity[1]",            offsetof( playerState_t, velocity[1]),  0 },
+	{ "velocity[0]",            offsetof( playerState_t, velocity[0]),  0 },
+	{ "speed",                  offsetof( playerState_t, speed), 16 },
+	{ "mins[0]",               offsetof( playerState_t, mins[0]),  0 },
+	{ "mins[1]",               offsetof( playerState_t, mins[1]),  0 },
+	{ "maxs[0]",               offsetof( playerState_t, maxs[0]),  0 },
+	{ "maxs[1]",               offsetof( playerState_t, maxs[1]),  0 },
+	{ "maxs[2]",               offsetof( playerState_t, maxs[2]),  0 },
+	{ "proneViewHeight",       offsetof( playerState_t, proneViewHeight), -8 },
+	{ "crouchViewHeight",      offsetof( playerState_t, crouchViewHeight), -8 },
+	{ "standViewHeight",       offsetof( playerState_t, standViewHeight), -8 },
+	{ "deadViewHeight",        offsetof( playerState_t, deadViewHeight), -8 },
+	{ "walkSpeedScale",        offsetof( playerState_t, walkSpeedScale),  0 },
+	{ "runSpeedScale",         offsetof( playerState_t, runSpeedScale),  0 },
+	{ "proneSpeedScale",       offsetof( playerState_t, proneSpeedScale),  0 },
+	{ "crouchSpeedScale",      offsetof( playerState_t, crouchSpeedScale),  0 },
+	{ "strafeSpeedScale",      offsetof( playerState_t, strafeSpeedScale),  0 },
+	{ "backSpeedScale",        offsetof( playerState_t, backSpeedScale),  0 },
+	{ "leanSpeedScale",        offsetof( playerState_t, leanSpeedScale),  0 },
+	{ "friction",              offsetof( playerState_t, friction),  0 },
+	{ "groundEntityNum",        offsetof( playerState_t, groundEntityNum), 10 },
+	{ "viewHeightTarget",      offsetof( playerState_t, viewHeightTarget), -8 },
+	{ "events[0]",             offsetof( playerState_t, events[0]),  8 },
+	{ "weapons[0]",            offsetof( playerState_t, weapons[0]), 32 },
+	{ "weaponslots[0]",        offsetof( playerState_t, weaponslots[0]), 32 },
+	{ "gravity",                offsetof( playerState_t, gravity), 16 },
+	{ "serverCursorHintString", offsetof( playerState_t, serverCursorHintString), -8 },
+	{ "viewmodelIndex",        offsetof( playerState_t, viewmodelIndex),  8 },
+	{ "events[1]",             offsetof( playerState_t, events[1]),  8 },
+	{ "events[2]",             offsetof( playerState_t, events[2]),  8 },
+	{ "events[3]",             offsetof( playerState_t, events[3]),  8 },
+	{ "delta_angles[0]",        offsetof( playerState_t, delta_angles[0]), 16 },
+	{ "weapon",                offsetof( playerState_t, weapon),  6 },
+	{ "movementDir",           offsetof( playerState_t, movementDir),  8 },
+	{ "viewHeightLerpTarget",  offsetof( playerState_t, viewHeightLerpTarget), -8 },
+	{ "weaponslots[4]",        offsetof( playerState_t, weaponslots[4]), 32 },
+	{ "proneDirection",        offsetof( playerState_t, proneDirection),  0 },
+	{ "aimSpreadScale",        offsetof( playerState_t, aimSpreadScale),  0 },
+	{ "weapAnim",              offsetof( playerState_t, weapAnim), 10 },
+	{ "jumpTime",              offsetof( playerState_t, jumpTime), 32 },
+	{ "velocity[2]",            offsetof( playerState_t, velocity[2]),  0 },
+	{ "weaponTime",             offsetof( playerState_t, weaponTime), -16 },
+	{ "proneTorsoPitch",       offsetof( playerState_t, proneTorsoPitch),  0 },
+	{ "proneDirectionPitch",   offsetof( playerState_t, proneDirectionPitch),  0 },
+	{ "fTorsoPitch",           offsetof( playerState_t, fTorsoPitch),  0 },
+	{ "fWaistPitch",           offsetof( playerState_t, fWaistPitch),  0 },
+	{ "fTorsoHeight",          offsetof( playerState_t, fTorsoHeight),  0 },
+	{ "weaponstate",           offsetof( playerState_t, weaponstate),  4 },
+	{ "torsoTimer",            offsetof( playerState_t, torsoTimer), 16 },
+	{ "torsoAnim",             offsetof( playerState_t, torsoAnim), 10 },
+	{ "eventParms[0]",         offsetof( playerState_t, eventParms[0]),  8 },
+	{ "vLadderVec[0]",          offsetof( playerState_t, vLadderVec[0]),  0 },
+	{ "eventParms[3]",         offsetof( playerState_t, eventParms[3]),  8 },
+	{ "viewHeightLerpDown",    offsetof( playerState_t, viewHeightLerpDown),  1 },
+	{ "weaponDelay",            offsetof( playerState_t, weaponDelay), -16 },
+	{ "eventParms[1]",         offsetof( playerState_t, eventParms[1]),  8 },
+	{ "viewHeightLerpTime",    offsetof( playerState_t, viewHeightLerpTime), 32 },
+	{ "eventParms[2]",         offsetof( playerState_t, eventParms[2]),  8 },
+	{ "vLadderVec[1]",          offsetof( playerState_t, vLadderVec[1]),  0 },
+	{ "fWeaponPosFrac",        offsetof( playerState_t, fWeaponPosFrac),  0 },
+	{ "pm_type",                 offsetof( playerState_t, pm_type),  8 },
+	{ "legsTimer",             offsetof( playerState_t, legsTimer), 16 },
+	{ "fJumpPeak",             offsetof( playerState_t, fJumpOriginZ),  0 },
+	{ "leanf",                  offsetof( playerState_t, leanf),  0 },
+	{ "damageEvent",           offsetof( playerState_t, damageEvent),  8 },
+	{ "damageYaw",             offsetof( playerState_t, damageYaw),  8 },
+	{ "damagePitch",           offsetof( playerState_t, damagePitch),  8 },
+	{ "damageCount",           offsetof( playerState_t, damageCount),  7 },
+	{ "weaponrechamber[0]",    offsetof( playerState_t, weaponrechamber[0]), 32 },
+	{ "grenadeTimeLeft",        offsetof( playerState_t, grenadeTimeLeft), -16 },
+	{ "pm_time",                offsetof( playerState_t, pm_time), -16 },
+	{ "iFoliageSoundTime",      offsetof( playerState_t, iFoliageSoundTime), 32 },
+	{ "deltaTime",            offsetof( playerState_t, deltaTime), 32 },
+	{ "serverCursorHint",      offsetof( playerState_t, serverCursorHint),  8 },
+	{ "serverCursorHintVal",   offsetof( playerState_t, serverCursorHintVal),  8 },
+	{ "shellshockIndex",       offsetof( playerState_t, shellshockIndex),  4 },
+	{ "shellshockTime",        offsetof( playerState_t, shellshockTime), 32 },
+	{ "shellshockDuration",    offsetof( playerState_t, shellshockDuration), 16 },
+	{ "delta_angles[2]",        offsetof( playerState_t, delta_angles[2]), 16 },
+	{ "vLadderVec[2]",          offsetof( playerState_t, vLadderVec[2]),  0 },
+	{ "clientNum",             offsetof( playerState_t, clientNum),  8 },
+	{ "weapons[1]",            offsetof( playerState_t, weapons[1]), 32 },
+	{ "weaponrechamber[1]",    offsetof( playerState_t, weaponrechamber[1]), 32 },
+	{ "viewangles[2]",         offsetof( playerState_t, viewangles[2]),  0 },
+	{ "viewHeightLerpPosAdj",  offsetof( playerState_t, viewHeightLerpPosAdj),  0 },
+	{ "mins[2]",               offsetof( playerState_t, mins[2]),  0 },
+	{ "viewlocked",            offsetof( playerState_t, viewlocked),  8 },
+	{ "viewlocked_entNum",     offsetof( playerState_t, viewlocked_entNum), 16 },
+	{ "gunfx",                 offsetof( playerState_t, gunfx),  8 }
 };
 
 static netField_t msg_objectiveFields[MSG_OBJECTIVE_FIELDS] = {
@@ -501,26 +501,60 @@ int MSG_ReadBit( msg_t *msg ) {
 }
 
 /* MSG_WriteBitsCompress  0x004448B0  VERIFIED */
-int MSG_WriteBitsCompress( const byte *datasrc, int bytecount, byte *buffdest ) {
+int MSG_WriteBitsCompress( const byte *datasrc, int bytecount, byte *buffdest, int capacity ) {
 	int i, offset;
+	if ( bytecount < 0 || bytecount > MAX_MSGLEN || capacity < 0 || capacity > MAX_MSGLEN ) {
+		Com_Error( ERR_DROP, "Invalid compression buffer size" );
+		return 0;
+	}
 
 	offset = 0;
 	for ( i = 0; i < bytecount; i++ ) {
+		node_t *node = msgHuff.compressor.loc[datasrc[i]];
+		int bits = 0;
+		while ( node && node->parent ) {
+			bits++;
+			node = node->parent;
+		}
+		if ( capacity < 0 || offset / 8 > capacity || bits > capacity * 8 - offset ) {
+			Com_Error( ERR_DROP, "Compressed message exceeds buffer capacity" );
+			return 0;
+		}
 		Huff_offsetTransmit( &msgHuff.compressor, datasrc[i], buffdest, &offset );
 	}
 	return ( offset + 7 ) >> 3;
 }
 
 /* MSG_ReadBitsCompress  0x00444900  VERIFIED */
-int MSG_ReadBitsCompress( const byte *input, byte *outputBuf, int readsize ) {
+int MSG_ReadBitsCompress( const byte *input, byte *outputBuf, int readsize, int capacity ) {
 	byte *outptr;
 	int offset, endOffset, get;
+	if ( readsize < 0 || readsize > MAX_MSGLEN || capacity < 0 || capacity > MAX_MSGLEN ) {
+		Com_Error( ERR_DROP, "Invalid decompression buffer size" );
+		return 0;
+	}
 
 	outptr = outputBuf;
 	offset = 0;
 	endOffset = readsize << 3;
 	while ( offset < endOffset ) {
-		Huff_offsetReceive( msgHuff.decompressor.tree, &get, (byte *)input, &offset );
+		node_t *node = msgHuff.decompressor.tree;
+		if ( outptr - outputBuf == capacity && endOffset - offset < 8 ) {
+			return outptr - outputBuf;
+		}
+		while ( node && node->symbol == INTERNAL_NODE ) {
+			/* The last byte may contain padding, not a complete symbol. */
+			if ( offset == endOffset ) {
+				return outptr - outputBuf;
+			}
+			node = ( input[offset >> 3] >> ( offset & 7 ) ) & 1 ? node->right : node->left;
+			offset++;
+		}
+		if ( !node || node->symbol > 255 || outptr - outputBuf >= capacity ) {
+			Com_Error( ERR_DROP, "Invalid or oversized compressed message" );
+			return 0;
+		}
+		get = node->symbol;
 		*outptr++ = (byte)get;
 	}
 	return outptr - outputBuf;
@@ -1014,7 +1048,7 @@ void MSG_WriteDeltaUsercmdKey( const usercmd_t *from, const usercmd_t *to, int k
 	MSG_WriteDeltaKey( msg, timeKey, from->buttons >> 1, to->buttons >> 1, 6 );
 	MSG_WriteDeltaKeyByte( msg, timeKey, from->wbuttons, to->wbuttons );
 	MSG_WriteDeltaKey( msg, timeKey, oldVert, newVert, 2 );
-	MSG_WriteDeltaKey( msg, timeKey, from->weapon, to->weapon, 6 );
+	MSG_WriteDeltaKey( msg, timeKey, from->weapon, to->weapon, msg->extended ? 8 : 6 );
 }
 
 /* MSG_ReadDeltaUsercmdKey  0x004458E0  VERIFIED */
@@ -1060,7 +1094,7 @@ void MSG_ReadDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, usercm
 	MSG_VertMoveFrom( MSG_ReadDeltaKey( msg, timeKey,
 										MSG_VertMoveTo( from->upmove ), 2 ),
 					  &to->upmove );
-	to->weapon = (byte)MSG_ReadDeltaKey( msg, timeKey, from->weapon, 6 );
+	to->weapon = (byte)MSG_ReadDeltaKey( msg, timeKey, from->weapon, msg->extended ? 8 : 6 );
 }
 
 #define MSG_SMALL_FLOAT_BIAS   4096
@@ -1091,6 +1125,10 @@ void MSG_WriteDeltaField( const byte *from, const byte *to, msg_t *msg, const ne
 		MSG_WriteBit1( msg );
 
 		bits = field->bits;
+		if ( msg->extended ) {
+			if ( !strcmp( field->name, "weapon" ) ) bits = 8;
+			else if ( !strncmp( field->name, "eventParm", 9 ) ) bits = 9;
+		}
 		if ( bits < 0 ) {
 			bits = -bits;
 		}
@@ -1246,6 +1284,10 @@ void MSG_ReadDeltaField( const byte *from, msg_t *msg, byte *to,
 			return;
 		}
 		bits = field->bits;
+		if ( msg->extended ) {
+			if ( !strcmp( field->name, "weapon" ) ) bits = 8;
+			else if ( !strncmp( field->name, "eventParm", 9 ) ) bits = 9;
+		}
 		if ( bits < 0 ) {
 			bits = -bits;
 		}
@@ -1431,24 +1473,24 @@ void MSG_ReadDeltaHudElems( msg_t *msg, const hudelem_t *from, hudelem_t *to, in
 	memset( &to[used], 0, (size_t)( count - used ) * sizeof( hudelem_t ) );
 }
 
-#define PS_STATS_OFFSET        244
+#define PS_STATS_OFFSET        offsetof( playerState_t, stats )
 #define PS_STATS_COUNT           6
 #define PS_STATS_BITS            6
 #define PS_STATS_WEAPON_INDEX    3
-#define PS_STATS_WEAPON_BITS     6
+#define PS_STATS_WEAPON_BITS     ( msg->extended ? 8 : 6 )
 
-#define PS_AMMO_OFFSET         268
-#define PS_AMMOCLIP_OFFSET     524
-#define PS_AMMO_GROUPS           4
+#define PS_AMMO_OFFSET         offsetof( playerState_t, ammo )
+#define PS_AMMOCLIP_OFFSET     offsetof( playerState_t, ammoclip )
+#define PS_AMMO_GROUPS           ( msg->extended ? 16 : 4 )
 #define PS_AMMO_GROUP_SIZE      16
 
-#define PS_OBJECTIVE_OFFSET   1000
+#define PS_OBJECTIVE_OFFSET   offsetof( playerState_t, objective )
 #define PS_OBJECTIVE_COUNT      16
 #define PS_OBJECTIVE_SIZE       28
 #define PS_OBJECTIVE_STATE_BITS  3
 
-#define PS_HUD_CURRENT_OFFSET 1448
-#define PS_HUD_ARCHIVE_OFFSET 4920
+#define PS_HUD_CURRENT_OFFSET offsetof( playerState_t, hud.current )
+#define PS_HUD_ARCHIVE_OFFSET offsetof( playerState_t, hud.archival )
 #define PS_HUD_ELEMS            31
 #define PS_HUD_TOTAL_BYTES    6944
 
@@ -1470,6 +1512,10 @@ static void MSG_WritePlayerStateField( const byte *from, const byte *to, msg_t *
 
 	if ( field->bits ) {
 		bits = field->bits;
+		if ( msg->extended ) {
+			if ( !strcmp( field->name, "weapon" ) ) bits = 8;
+			else if ( !strncmp( field->name, "eventParm", 9 ) ) bits = 9;
+		}
 		if ( bits < 0 ) {
 			bits = -bits;
 		}
@@ -1515,6 +1561,10 @@ static void MSG_ReadPlayerStateField( const byte *from, msg_t *msg, byte *to,
 
 	if ( field->bits ) {
 		bits = field->bits;
+		if ( msg->extended ) {
+			if ( !strcmp( field->name, "weapon" ) ) bits = 8;
+			else if ( !strncmp( field->name, "eventParm", 9 ) ) bits = 9;
+		}
 		if ( bits < 0 ) {
 			bits = -bits;
 		}
@@ -1613,7 +1663,8 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const byte *from, const byte *to, in
 	static byte nullState[sizeof( playerState_t )];
 	int i, lastChanged;
 	unsigned int statBits;
-	unsigned int ammoBits[PS_AMMO_GROUPS];
+	unsigned int anyAmmo = 0;
+	unsigned int ammoBits[16];
 	unsigned int clipBits;
 
 	(void)number;
@@ -1636,6 +1687,14 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const byte *from, const byte *to, in
 		MSG_WritePlayerStateField( from, to, msg, &msg_playerStateFields[i] );
 	}
 
+	if ( msg->extended ) {
+		const playerState_t *oldPs = (const playerState_t *)from;
+		const playerState_t *newPs = (const playerState_t *)to;
+		for ( i = 2; i < WEAPON_MASK_WORDS; i++ ) {
+			MSG_WriteDeltaKey( msg, 0, oldPs->weapons[i], newPs->weapons[i], 32 );
+			MSG_WriteDeltaKey( msg, 0, oldPs->weaponrechamber[i], newPs->weaponrechamber[i], 32 );
+		}
+	}
 	statBits = 0;
 	for ( i = 0; i < PS_STATS_COUNT; i++ ) {
 		if ( *(const int *)( from + PS_STATS_OFFSET + i * 4 )
@@ -1657,8 +1716,9 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const byte *from, const byte *to, in
 
 	for ( i = 0; i < PS_AMMO_GROUPS; i++ ) {
 		ammoBits[i] = MSG_PlayerStateAmmoGroupBits( from, to, PS_AMMO_OFFSET, i );
+		anyAmmo |= ammoBits[i];
 	}
-	if ( !ammoBits[0] && !ammoBits[1] && !ammoBits[2] && !ammoBits[3] ) {
+	if ( !anyAmmo ) {
 		MSG_WriteBit0( msg );
 	} else {
 		MSG_WriteBit1( msg );
@@ -1716,6 +1776,7 @@ void MSG_ReadDeltaPlayerstate( msg_t *msg, const byte *from, byte *to, int numbe
 	static byte nullState[sizeof( playerState_t )];
 	int i, j, lastChanged;
 	unsigned int statBits;
+	unsigned int anyAmmo = 0;
 	qboolean print;
 
 	(void)number;
@@ -1741,6 +1802,14 @@ void MSG_ReadDeltaPlayerstate( msg_t *msg, const byte *from, byte *to, int numbe
 		MSG_ReadPlayerStateField( from, msg, to, &msg_playerStateFields[i], print );
 	}
 
+	if ( msg->extended ) {
+		const playerState_t *oldPs = (const playerState_t *)from;
+		playerState_t *newPs = (playerState_t *)to;
+		for ( i = 2; i < WEAPON_MASK_WORDS; i++ ) {
+			newPs->weapons[i] = MSG_ReadDeltaKey( msg, 0, oldPs->weapons[i], 32 );
+			newPs->weaponrechamber[i] = MSG_ReadDeltaKey( msg, 0, oldPs->weaponrechamber[i], 32 );
+		}
+	}
 	if ( MSG_ReadBit( msg ) ) {
 		statBits = (unsigned int)MSG_ReadBits( msg, PS_STATS_BITS );
 		for ( i = 0; i < PS_STATS_COUNT; i++ ) {
