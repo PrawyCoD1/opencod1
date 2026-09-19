@@ -125,6 +125,7 @@ vmCvar_t sv_cheats;                       /* 0x20235E40 */
 vmCvar_t g_gametype;                      /* 0x20236CE0 */
 vmCvar_t sv_maxclients;                   /* 0x202346A0 */
 vmCvar_t g_synchronousClients;            /* 0x20234C40 */
+vmCvar_t g_bounce;
 vmCvar_t g_intermissionDelay;             /* 0x20237040 */
 vmCvar_t g_log;                           /* 0x20236620 */
 vmCvar_t g_logSync;                       /* 0x20237160 */
@@ -198,6 +199,8 @@ static cvarTable_t gameCvarTable[] = {
 	{ &g_gametype,               "g_gametype",                  "dm",                               CVAR_SERVERINFO | CVAR_LATCH, 0, qfalse },
 	{ &sv_maxclients,            "sv_maxclients",               "20",                               CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH, 0, qfalse },
 	{ &g_synchronousClients,     "g_synchronousClients",        "0",                                CVAR_SYSTEMINFO, 0, qfalse },
+	{ &g_bounce,                 "g_bounce",                    "0",                                CVAR_ARCHIVE, 0, qfalse },
+	{ NULL,                      "x_cl_bounce",                 "0",                                CVAR_SYSTEMINFO | CVAR_ROM, 0, qfalse },
 	{ &g_intermissionDelay,      "g_intermissionDelay",         "1000",                             0, 0, qfalse },
 	{ &g_log,                    "g_log",                       "games_mp.log",                     CVAR_ARCHIVE, 0, qfalse },
 	{ &g_logSync,                "g_logSync",                   "0",                                CVAR_ARCHIVE, 0, qfalse },
@@ -775,6 +778,7 @@ void G_RegisterCvars( void ) {
 		trap_Cvar_Set( "g_gametype", "dm" );
 		trap_Cvar_Update( &g_gametype );
 	}
+	trap_Cvar_Set( "x_cl_bounce", g_bounce.integer ? "1" : "0" );
 }
 
 /*
@@ -799,6 +803,10 @@ void G_UpdateCvars( void ) {
 				}
 			}
 		}
+	}
+	/* Advertise the authoritative server toggle for cgame prediction. */
+	if ( trap_Cvar_VariableIntegerValue( "x_cl_bounce" ) != (g_bounce.integer != 0) ) {
+		trap_Cvar_Set( "x_cl_bounce", g_bounce.integer ? "1" : "0" );
 	}
 }
 

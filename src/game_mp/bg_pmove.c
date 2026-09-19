@@ -276,6 +276,42 @@ void PM_ClipVelocity( const vec3_t in, const vec3_t normal, vec3_t out, float ov
 	}
 }
 
+/* xoxor4d's slope projection, used only at the bounce hook's step-down site.
+ * Preserve input when projection is rejected, including non-aliased outputs. */
+void PM_ProjectVelocity( const vec3_t in, const vec3_t normal, vec3_t out ) {
+	float speedXY = in[0] * in[0] + in[1] * in[1];
+	float projectedZ, scale;
+	if ( normal[2] < 0.001f || speedXY == 0.0f ) {
+		VectorCopy( in, out );
+		return;
+	}
+	projectedZ = -(normal[0] * in[0] + normal[1] * in[1]) / normal[2];
+	scale = sqrtf( (in[2] * in[2] + speedXY) / (speedXY + projectedZ * projectedZ) );
+	if ( scale < 1.0f || projectedZ < 0.0f || in[2] > 0.0f ) {
+		out[0] = scale * in[0];
+		out[1] = scale * in[1];
+		out[2] = scale * projectedZ;
+	} else {
+		VectorCopy( in, out );
+	}
+}
+
+void PM_Bounce( const vec3_t in, const vec3_t normal, vec3_t out ) {
+#ifdef CGAMEDLL
+	extern const char *CG_ConfigString( int index );
+	/* Read the server's value, not a client-editable or stale local cvar. */
+	int enabled = atoi( Info_ValueForKey( CG_ConfigString( 1 ), "x_cl_bounce" ) );
+#else
+	extern vmCvar_t g_bounce;
+	int enabled = g_bounce.integer;
+#endif
+	if ( enabled ) {
+		PM_ProjectVelocity( in, normal, out );
+	} else {
+		PM_ClipVelocity( in, normal, out, OVERCLIP );
+	}
+}
+
 /*
 ==============
 PM_GetEffectiveStance

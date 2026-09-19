@@ -89,6 +89,8 @@ static __inline int PM_FloatSign( float value ) {
 void        PM_AddEvent( int newEvent );
 void        PM_AddTouchEnt( int entityNum );
 void        PM_ClipVelocity( const vec3_t in, const vec3_t normal, vec3_t out, float overbounce );
+void        PM_ProjectVelocity( const vec3_t in, const vec3_t normal, vec3_t out );
+void        PM_Bounce( const vec3_t in, const vec3_t normal, vec3_t out );
 int         PM_GetViewHeightLerpTime( const playerState_t *ps, int viewheight,
 									  int viewHeightLerpDown );
 void        PM_FootstepEvent( int oldBobCycle, qboolean footstep, int newBobCycle );

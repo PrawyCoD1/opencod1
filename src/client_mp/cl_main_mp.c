@@ -4012,6 +4012,7 @@ void CL_Init( void ) {
 
 	Cvar_Set2( "cl_running", "1", qtrue );
 	CL_DiscordInit();
+	Cvar_Get( "g_bounce", "0", CVAR_ARCHIVE );
 
 	Com_Printf( "----- Client Initialization Complete -----\n" );
 }
