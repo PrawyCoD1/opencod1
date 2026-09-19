@@ -61,6 +61,7 @@ const char *com_quitReason;
 
 static jmp_buf abortframe;
 static int com_errorCode;
+extern int scr_updatingScreen;
 
 static char     *com_consoleLines[MAX_CONSOLE_LINES];
 static int com_numConsoleLines;
@@ -350,6 +351,9 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	}
 
 	com_errorCode = code;
+	/* Errors raised while drawing bypass SCR_UpdateScreen's normal cleanup.
+	 * Retail clears this guard before aborting so subsequent frames can draw. */
+	scr_updatingScreen = qfalse;
 	longjmp( abortframe, -1 );
 }
 
