@@ -2325,7 +2325,7 @@ void BG_PlayerAngles( clientInfo_t *ci, entityState_t *es ) {
 
 	if ( ( es->eFlags & EF_TURRET_ACTIVE_MASK )
 		 || ( ci->conditions[ANIM_COND_MOVETYPE][0] & ANIM_MT_CLIMBING_MASK )
-		 || !( es->eFlags & 0x6 ) ) {
+		 || !( ci->conditions[ANIM_COND_MOVETYPE][0] & 0x6 ) ) {
 		// always centred
 		ci->legs.yawing = qtrue;
 		ci->torso.yawing = qtrue;

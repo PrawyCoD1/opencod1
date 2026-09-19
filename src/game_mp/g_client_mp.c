@@ -375,7 +375,7 @@ const char *ClientConnect( int clientNum, unsigned int scriptId ) {
 	ent = g_entities + clientNum;
 	G_InitGentity( ent );
 	ent->client = client;
-	ent->think = NULL;
+	ent->touch = NULL;
 	ent->pain = NULL;
 
 	client->sess.clientNum = clientNum;

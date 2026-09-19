@@ -41,10 +41,26 @@
 #define ROLL                        2
 
 /* usercmd_t.buttons.  0x01 is bg_animation.c's BUTTON_ATTACK; 0x20 and 0x40
-   are the spectator "previous" and the activate button, neither named. */
+   are Melee and the activate button, neither named. */
+#define BUTTON_NONE        	0
+
+#define BUTTON_FORWARD        		127
+#define BUTTON_BACK           		-127
+#define BUTTON_MOVERIGHT      		127
+#define BUTTON_MOVELEFT       		-127
+#define BUTTON_JUMP           		127 // upmove. prone and jump = -KEY_MASK_JUMP
+
 #define BUTTON_ATTACK               0x01
-#define BUTTON_SPECTATOR_PREV       0x20
-#define BUTTON_ACTIVATE             0x40
+#define BUTTON_RELOAD         		0x08
+#define BUTTON_ADS		       		0x10
+#define BUTTON_MELEE          		0x20
+#define BUTTON_ACTIVATE       		0x40
+
+#define WBUTTON_LEANLEFT       		0x10 // wbuttons
+#define WBUTTON_LEANRIGHT      		0x20 // wbuttons
+#define WBUTTON_PRONE          		0x40 // wbuttons
+#define WBUTTON_CROUCH         		0x80 // wbuttons
+
 
 /* playerState_t.pm_flags.  PMF_DUCKED and PMF_TIME_LAND are bg_pmove.c's; the
    three names below are inferred --
@@ -241,14 +257,14 @@ void P_DamageFeedback( gentity_t *player ) {
 	}
 
 	if ( level.time > player->painDebounceTime && !( player->flags & FL_GODMODE ) ) {
-		percent = (int)( (float)client->ps.stats[STAT_HEALTH]
+		int healthPercent = (int)( (float)client->ps.stats[STAT_HEALTH]
 						 / (float)client->ps.stats[STAT_MAX_HEALTH] * 100.0f );
-		if ( percent < 0 ) {
-			percent = 0;
-		} else if ( percent > 100 ) {
-			percent = 100;
+		if ( healthPercent < 0 ) {
+			healthPercent = 0;
+		} else if ( healthPercent > 100 ) {
+			healthPercent = 100;
 		}
-		G_AddEvent( player, EV_PAIN, percent );
+		G_AddEvent( player, EV_PAIN, healthPercent );
 		player->painDebounceTime = level.time + 700;
 	}
 
@@ -394,14 +410,14 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 	client->wbuttons = client->sess.cmd.wbuttons;
 
 	if ( client->sess.forceSpectatorClient < 0 && client->spectatorClient >= 0
-		 && ( ( client->buttons ^ client->oldbuttons ) & BUTTON_SPECTATOR_PREV ) ) {
+		 && ( ( client->buttons ^ client->oldbuttons ) & BUTTON_ADS ) ) {
 		StopFollowing( ent );
 	}
 
 	if ( ( client->buttons & BUTTON_ATTACK ) && !( client->oldbuttons & BUTTON_ATTACK ) ) {
 		Cmd_FollowCycle_f( ent, 1 );
-	} else if ( ( client->buttons & BUTTON_SPECTATOR_PREV )
-				&& !( client->oldbuttons & BUTTON_SPECTATOR_PREV ) ) {
+	} else if ( ( client->buttons & BUTTON_MELEE )
+				&& !( client->oldbuttons & BUTTON_MELEE ) ) {
 		Cmd_FollowCycle_f( ent, -1 );
 	}
 

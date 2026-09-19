@@ -1255,9 +1255,9 @@ void GScr_GetBrushModelCenter( void ) {
 		ent = &g_entities[entnum];
 	}
 
-	center[0] = ( ent->r.mins[0] + ent->r.maxs[0] ) * 0.5f;
-	center[1] = ( ent->r.mins[1] + ent->r.maxs[1] ) * 0.5f;
-	center[2] = ( ent->r.mins[2] + ent->r.maxs[2] ) * 0.5f;
+	center[0] = ( ent->r.absmin[0] + ent->r.absmax[0] ) * 0.5f;
+	center[1] = ( ent->r.absmin[1] + ent->r.absmax[1] ) * 0.5f;
+	center[2] = ( ent->r.absmin[2] + ent->r.absmax[2] ) * 0.5f;
 
 	Scr_AddVector( center );
 }
