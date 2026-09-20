@@ -3712,7 +3712,7 @@ static void UI_DisplayDownloadInfo( const char *downloadName, float centerPoint,
 
 	// CoD 1.5 displays the complete download name without the 1.1 +8 offset.
 	if ( downloadSize > 0 ) {
-		s = va( "%s (%d%%)", downloadName, downloadCount * 100 / downloadSize );
+		s = va( "%s (%d%%)", downloadName, (int)( ( (__int64)downloadCount * 100 ) / downloadSize ) );
 	} else {
 		s = downloadName;
 	}
@@ -3735,11 +3735,9 @@ static void UI_DisplayDownloadInfo( const char *downloadName, float centerPoint,
 
 		// Extrapolate estimated completion time
 		if ( downloadSize && xferRate ) {
-			int n = downloadSize / xferRate; // estimated time for entire d/l in secs
 			int timeleft = 0, i;
 
-			// We do it in K (/1024) because we'd overflow around 4MB
-			tleEstimates[ tleIndex ] = ( n - ( ( ( downloadCount / 1024 ) * n ) / ( downloadSize / 1024 ) ) );
+			tleEstimates[ tleIndex ] = ( downloadSize - downloadCount ) / xferRate;
 			tleIndex++;
 			if ( tleIndex >= ESTIMATES ) {
 				tleIndex = 0;

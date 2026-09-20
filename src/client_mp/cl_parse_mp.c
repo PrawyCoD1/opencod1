@@ -693,7 +693,9 @@ void __cdecl CL_ParseDownload( msg_t *v0 )
   else
   {
     data = v0->data;
-    v5 = *(__int16 *)&data[v1->readcount];
+    /* The wire carries the low 16 bits of an increasing block counter. */
+    v5 = *(unsigned short *)&data[v1->readcount];
+    v5 = *(int *)cls_downloadBlock + (short)( v5 - *(int *)cls_downloadBlock );
     v1->readcount = v3;
     v21 = v5;
     if ( !v5 )
@@ -714,7 +716,7 @@ void __cdecl CL_ParseDownload( msg_t *v0 )
       if ( clc_downloadSize < 0 )
       {
         String = MSG_ReadString(v1);
-        Com_Error(ERR_DROP, String);
+        Com_Error(ERR_DROP, "%s", String);
       }
     }
   }
@@ -732,11 +734,13 @@ void __cdecl CL_ParseDownload( msg_t *v0 )
     v12 = v11;
     v1->readcount = v9;
     v20 = v11;
+    if ( v11 < 0 || v11 > sizeof( Buffer ) || v11 > v8 - v9 )
+      Com_Error(ERR_DROP, "Invalid download block size");
     if ( v11 > 0 )
     {
       if ( v9 + v11 > v8 )
       {
-        memset(Buffer, 0xFFu, v11);
+        Com_Error(ERR_DROP, "Truncated download block");
       }
       else
       {
@@ -745,6 +749,8 @@ void __cdecl CL_ParseDownload( msg_t *v0 )
       }
     }
   }
+  if ( v20 < 0 || v3 > cursize )
+    Com_Error(ERR_DROP, "Truncated download packet");
   if ( *(_DWORD *)cls_downloadBlock != v21 )
   {
     Com_DPrintf("CL_ParseDownload: Expected block %d, got %d\n", *(_DWORD *)cls_downloadBlock, v21);
@@ -777,8 +783,11 @@ LABEL_30:
     }
     v12 = v20;
   }
-  if ( v12 )
-    FS_Write(Buffer, v12, v15);
+  if ( v12 > clc_downloadSize - cls_downloadCount ||
+       ( !v12 && cls_downloadCount != clc_downloadSize ) )
+    Com_Error(ERR_DROP, "Download size does not match server header");
+  if ( v12 && FS_Write(Buffer, v12, v15) != v12 )
+    Com_Error(ERR_DROP, "Could not write download file");
   v16 = va("nextdl %d", *(_DWORD *)cls_downloadBlock);
   CL_AddReliableCommand(v16);
   cls_downloadCount += v20;

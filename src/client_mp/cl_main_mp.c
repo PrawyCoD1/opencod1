@@ -1536,8 +1536,7 @@ void CL_BeginDownload( const char *localName, const char *remoteName )
 		localName,
 		remoteName );
 
-	strncpy( (char *)&cls_downloadName, localName, 0xFFu );
-	byte_15EEBAB = 0;
+	Q_strncpyz( (char *)cls_downloadName, localName, sizeof( cls_downloadName ) );
 	Com_sprintf( (char *)&cls_downloadTempName, 256, "%s.tmp", localName );
 
 	Cvar_Set2( "cl_downloadName", remoteName, qtrue );
@@ -1547,6 +1546,7 @@ void CL_BeginDownload( const char *localName, const char *remoteName )
 
 	*(_DWORD *)cls_downloadBlock = 0;
 	cls_downloadCount = 0;
+	clc_downloadSize = 0;
 
 	CL_AddReliableCommand( va( "download %s", remoteName ) );
 }
@@ -1566,7 +1566,7 @@ void CL_NextDownload( void )
 
   remoteName = (char *)&clc_downloadList[0];
   if ( clc_downloadList[0] == '@' ) {
-    remoteName = (char *)&unk_15EEBBD[0];
+    remoteName = (char *)clc_downloadList + 1;
   }
 
   at = strchr( remoteName, '@' );
@@ -1588,7 +1588,7 @@ void CL_NextDownload( void )
 
     CL_BeginDownload( localName, remoteName );
     cls_downloadRestart = 1;
-    strcpy( (char *)&clc_downloadList[0], rest );
+    memmove( clc_downloadList, rest, strlen( rest ) + 1 );
   }
   else
   {
