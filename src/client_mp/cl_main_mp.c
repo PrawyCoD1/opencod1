@@ -8,6 +8,8 @@
 #include "cl_records.h"
 #include "cl_vm.h"
 #include "cl_discord.h"
+#include "cl_http.h"
+#include "cl_update.h"
 
 int clc_serverBuild = -1;
 
@@ -717,6 +719,8 @@ void CL_ClearState( void )
 void __cdecl CL_Disconnect(qboolean showMainMenu)
 {
   int v1;
+
+  CL_HTTPCancel();
 
   if ( com_cl_running )
   {
@@ -1548,7 +1552,8 @@ void CL_BeginDownload( const char *localName, const char *remoteName )
 	cls_downloadCount = 0;
 	clc_downloadSize = 0;
 
-	CL_AddReliableCommand( va( "download %s", remoteName ) );
+	if ( !CL_HTTPBegin( remoteName ) )
+		CL_AddReliableCommand( va( "download %s", remoteName ) );
 }
 
 /* ---- CL_NextDownload  0x00410190 ----  VERIFIED */
@@ -2203,81 +2208,12 @@ void __cdecl CL_StartHunkUsers()
 
 /* ---- CL_CheckAutoUpdate  0x00411650 ----  VERIFIED */
 void CL_CheckAutoUpdate( void ) {
-	int validServerNum = 0;
-	int i = 0, rnd = 0;
-	netadr_t temp;
-	char *servername[MAX_AUTOUPDATE_SERVERS];
-	char *cls_autoupdateServerNames[MAX_AUTOUPDATE_SERVERS];
-
-	cls_autoupdateServerNames[0] = cls_autoupdateServerNames_0_;
-	cls_autoupdateServerNames[1] = cls_autoupdateServerNames_1_;
-	cls_autoupdateServerNames[2] = cls_autoupdateServerNames_2_;
-	cls_autoupdateServerNames[3] = cls_autoupdateServerNames_3_;
-	cls_autoupdateServerNames[4] = cls_autoupdateServerNames_4_;
-
-	if ( autoupdateChecked ) {
-		return;
-	}
-
-	srand( Com_Milliseconds() );
-
-	for ( i = 0; i < MAX_AUTOUPDATE_SERVERS; i++ ) {
-		if ( NET_StringToAdr( cls_autoupdateServerNames[i], &temp ) ) {
-			servername[validServerNum++] = cls_autoupdateServerNames[i];
-		}
-	}
-
-	if ( !validServerNum ) {
-		Com_DPrintf( "Couldn't resolve an AutoUpdate Server address.\n" );
-	} else {
-		rnd = rand() % validServerNum;
-
-		Com_DPrintf( "Resolving AutoUpdate Server... " );
-		if ( !NET_StringToAdr( servername[rnd], (netadr_t *)cls_autoupdateServer ) ) {
-			Com_DPrintf( "\nCouldn't resolve first address, trying others... " );
-
-			for ( i = 1; i < validServerNum; i++ ) {
-				if ( NET_StringToAdr( servername[( i + rnd ) % validServerNum],
-									  (netadr_t *)cls_autoupdateServer ) ) {
-					Com_DPrintf( "\nAlternate server address resolved... " );
-					break;
-				}
-			}
-
-			if ( i == validServerNum ) {
-				Com_DPrintf( "\nFailed to resolve any Auto-update servers.\n" );
-				autoupdateChecked = qtrue;
-				return;
-			}
-		}
-
-		( (netadr_t *)cls_autoupdateServer )->port = BigShort( PORT_SERVER );
-		Com_DPrintf( "%i.%i.%i.%i:%i\n",
-					 ( (netadr_t *)cls_autoupdateServer )->ip[0],
-					 ( (netadr_t *)cls_autoupdateServer )->ip[1],
-					 ( (netadr_t *)cls_autoupdateServer )->ip[2],
-					 ( (netadr_t *)cls_autoupdateServer )->ip[3],
-					 BigShort( ( (netadr_t *)cls_autoupdateServer )->port ) );
-
-		NET_OutOfBandPrint( NS_CLIENT, *(netadr_t *)cls_autoupdateServer,
-							"getUpdateInfo \"%s\" \"%s\"\n", "1.1", "win-x86" );
-
-		CL_RequestMotd();
-	}
-
-	autoupdateChecked = qtrue;
+	CL_UpdateCheck();
 }
 
 /* ---- CL_GetAutoUpdate  0x004117E0 ----  VERIFIED */
 void CL_GetAutoUpdate( void ) {
-	if ( !autoupdateChecked ) {
-		return;
-	}
-	if ( !strlen( cl_updatefiles->string ) ) {
-		return;
-	}
-
-	Sys_OpenURL( cl_updatefiles->string, "quit\n" );
+	CL_UpdateStart();
 }
 
 /* ---- CL_ScaledMilliseconds  0x00411860 ----  VERIFIED */
@@ -2725,34 +2661,8 @@ void CL_ServerInfoPacket( netadr_t from, msg_t *msg ) {
 
 /* ---- CL_UpdateInfoPacket  0x00412F70 ----  VERIFIED */
 void CL_UpdateInfoPacket( netadr_t from ) {
-
-	if ( ( (netadr_t *)cls_autoupdateServer )->type == NA_BAD ) {
-		Com_DPrintf( "CL_UpdateInfoPacket:  Auto-Updater has bad address\n" );
-		return;
-	}
-
-	Com_DPrintf( "Auto-Updater resolved to %i.%i.%i.%i:%i\n",
-				 ( (netadr_t *)cls_autoupdateServer )->ip[0],
-				 ( (netadr_t *)cls_autoupdateServer )->ip[1],
-				 ( (netadr_t *)cls_autoupdateServer )->ip[2],
-				 ( (netadr_t *)cls_autoupdateServer )->ip[3],
-				 BigShort( ( (netadr_t *)cls_autoupdateServer )->port ) );
-
-	if ( !NET_CompareAdr( from, *(netadr_t *)cls_autoupdateServer ) ) {
-		Com_DPrintf( "CL_UpdateInfoPacket:  Received packet from %i.%i.%i.%i:%i\n",
-					 from.ip[0], from.ip[1], from.ip[2], from.ip[3],
-					 BigShort( from.port ) );
-		return;
-	}
-
-	Cvar_Set2( "cl_updateavailable", Cmd_Argv( 1 ), qtrue );
-
-	if ( cl_updateavailable->string
-		 && !Q_stricmp( cl_updateavailable->string, "1" ) ) {
-		Cvar_Set2( "cl_updatefiles", Cmd_Argv( 2 ), qtrue );
-		Cvar_Set2( "cl_updateversion", Cmd_Argv( 3 ), qtrue );
-		Cvar_Set2( "cl_updateoldversion", "1.1", qtrue );
-	}
+	/* Binary updates come only from our configured manifest endpoint. */
+	(void)from;
 }
 
 /* ---- CL_GetServerStatus  0x004130E0 ----  [HIGH] */
@@ -3907,6 +3817,8 @@ void CL_Frame( int msec ) {
 	}
 
 	CL_CheckUserinfo();
+	CL_HTTPFrame();
+	CL_UpdateFrame();
 	CL_CheckTimeout();
 	CL_SendCmd();
 	CL_CheckForResend();
@@ -3932,6 +3844,7 @@ void CL_Frame( int msec ) {
 /* ---- CL_Init  0x00411E60 ----  [CONFIRMED] */
 void CL_Init( void ) {
 	Com_Printf( "----- Client Initialization -----\n" );
+	CL_HTTPInit();
 
 	Con_Init();
 
@@ -4067,6 +3980,7 @@ void CL_Init( void ) {
 
 	Cvar_Set2( "cl_running", "1", qtrue );
 	CL_DiscordInit();
+	CL_UpdateInit();
 	Cvar_Get( "g_bounce", "0", CVAR_ARCHIVE );
 	Cvar_Get( "cl_autorecord", "0", CVAR_ARCHIVE );
 

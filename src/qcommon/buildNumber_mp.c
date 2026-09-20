@@ -9,7 +9,7 @@
 
 #include "qcommon.h"
 
-#define PRODUCT_BUILD_NUMBER    1413
+#include "product_build.h"
 
 #ifndef PRODUCT_BUILD_DATE
 #define PRODUCT_BUILD_DATE      __DATE__

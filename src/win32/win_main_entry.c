@@ -47,6 +47,14 @@ int __stdcall WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	(void) nCmdShow;
 
+#ifndef DEDICATED
+	{
+		extern int CL_UpdateHelper(const char *);
+		int result = CL_UpdateHelper(lpCmdLine);
+		if (result >= 0) return result;
+	}
+#endif
+
 	Cod1_InstallCrashReporter();
 
 	Cod1_InstallHangWatchdog();

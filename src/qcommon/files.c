@@ -214,6 +214,22 @@ static int fs_numServerReferencedPaks;
 static int fs_serverReferencedPaks[MAX_SEARCH_PATHS];
 static char *fs_serverReferencedPakNames[MAX_SEARCH_PATHS];
 
+/* Keep lookups beside the list populated by FS_PureServerSetReferencedPaks.
+   universal/com_files.c also contains legacy globals with these names. */
+int FS_ReferencedDownloadChecksum(const char *remote, int *checksum) {
+	int i;
+	char name[MAX_OSPATH];
+	for (i = 0; i < fs_numServerReferencedPaks; ++i) {
+		if (!fs_serverReferencedPakNames[i]) continue;
+		Com_sprintf(name, sizeof(name), "%s.pk3", fs_serverReferencedPakNames[i]);
+		if (!Q_stricmp(name, remote)) {
+			*checksum = fs_serverReferencedPaks[i];
+			return 1;
+		}
+	}
+	return 0;
+}
+
 /* fs_checksumFeed and fs_fakeChkSum are owned by universal/com_files.c.
  * Use the shared declarations in files_local.h: a private seed here makes
  * pure reports XOR against zero instead of the server's checksum feed. */

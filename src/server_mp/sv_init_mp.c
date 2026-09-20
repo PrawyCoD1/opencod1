@@ -623,6 +623,8 @@ void SV_Init( void ) {
 	Cvar_Get( "nextmap", "", CVAR_TEMP );
 
 	sv_allowDownload = Cvar_Get( "sv_allowDownload", "1", CVAR_ARCHIVE );
+	Cvar_Get( "sv_wwwDownload", "0", CVAR_ARCHIVE | CVAR_SERVERINFO );
+	Cvar_Get( "sv_wwwBaseURL", "", CVAR_ARCHIVE | CVAR_SERVERINFO );
 
 	sv_master[0] = sv_master_0_ = Cvar_Get( "sv_master1", "codmaster.activision.com", 0 );
 	sv_master[1] = sv_master_1_ = Cvar_Get( "sv_master2", "", CVAR_ARCHIVE );

@@ -882,11 +882,10 @@ void __cdecl FillCloudBox(int a1, int a2)
   float v11;
   float v12;
   float v13;
-  int v14; // [esp+18h] [ebp-10h] BYREF
-  int v15;
-  int v16; // [esp+20h] [ebp-8h] BYREF
-  int v17;
-  int savedregs; // [esp+28h] [ebp+0h] BYREF
+  /* FillCloudySkySide reads two contiguous 32-bit bounds per axis pair.
+   * Separate decompiler locals are not guaranteed to be adjacent on the stack. */
+  int maxs[2];
+  int mins[2];
 
   for ( i = 0; i < 6; ++i )
   {
@@ -903,55 +902,55 @@ void __cdecl FillCloudBox(int a1, int a2)
         ftol_tempSpill = (int)v10;
         v4 = (int)v10;
         v5 = flt_11DAE20[i] * 4.0;
-        v16 = v4;
+        mins[0] = v4;
         v11 = v5;
         ftol_tempSpill = (int)v11;
         v6 = (int)v11;
         v7 = sky_maxs[i] * 4.0;
-        v17 = v6;
+        mins[1] = v6;
         v12 = v7;
         ftol_tempSpill = (int)v12;
         v8 = (int)v12;
         v9 = flt_11DAE50[i] * 4.0;
-        v14 = v8;
+        maxs[0] = v8;
         v13 = v9;
         ftol_tempSpill = (int)v13;
-        v15 = (int)v13;
+        maxs[1] = (int)v13;
         if ( v4 >= -4 )
         {
           if ( v4 > 4 )
-            v16 = 4;
+            mins[0] = 4;
         }
         else
         {
-          v16 = -4;
+          mins[0] = -4;
         }
-        if ( ((double)v17 < -4.0) | __UNORDERED__((double)v17, -4.0) )
+        if ( ((double)mins[1] < -4.0) | __UNORDERED__((double)mins[1], -4.0) )
         {
-          v17 = -4;
+          mins[1] = -4;
         }
         else if ( v6 > 4 )
         {
-          v17 = 4;
+          mins[1] = 4;
         }
         if ( v8 >= -4 )
         {
           if ( v8 > 4 )
-            v14 = 4;
+            maxs[0] = 4;
         }
         else
         {
-          v14 = -4;
+          maxs[0] = -4;
         }
-        if ( ((double)v15 < -4.0) | __UNORDERED__((double)v15, -4.0) )
+        if ( ((double)maxs[1] < -4.0) | __UNORDERED__((double)maxs[1], -4.0) )
         {
-          v15 = -4;
+          maxs[1] = -4;
         }
         else if ( (int)v13 > 4 )
         {
-          v15 = 4;
+          maxs[1] = 4;
         }
-        FillCloudySkySide((int)&savedregs, &v16, &v14, i, a2 == 0);
+        FillCloudySkySide(0, (_WORD *)mins, (_WORD *)maxs, i, a2 == 0);
       }
     }
   }

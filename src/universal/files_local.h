@@ -224,6 +224,7 @@ extern int      fs_serverPaks[MAX_SEARCH_PATHS];
 extern char     *fs_serverPakNames[MAX_SEARCH_PATHS];
 
 extern int      fs_numServerReferencedPaks;
+int FS_ReferencedDownloadChecksum(const char *remote, int *checksum);
 extern int      fs_serverReferencedPaks[MAX_SEARCH_PATHS];
 extern char     *fs_serverReferencedPakNames[MAX_SEARCH_PATHS];
 

@@ -1210,6 +1210,38 @@ void FS_WriteFile( const char *qpath, const void *buffer, int size ) {
 }
 
 /* ---- FS_LoadZipFile  0x0042AC20 ---- */
+/* Compare an unmounted HTTP temporary archive with the server's referenced
+   pak checksum before making it visible to the normal search path. */
+int FS_VerifyDownload( const char *path, const char *remote ) {
+	unzFile uf;
+	unz_file_info info;
+	int *crcs, count, used = 0, i, expected = 0, valid = 0;
+	if (!FS_ReferencedDownloadChecksum(remote, &expected)) {
+		Com_Printf("HTTP verification: %s is absent from the server's referenced pak list\n", remote);
+		return 0;
+	}
+	if (!(uf = Unz_Open(path))) {
+		Com_Printf("HTTP verification: %s is not a readable PK3\n", remote);
+		return 0;
+	}
+	if ( Unz_GetGlobalNumFiles(uf, &count) || count <= 0 || count > 65536 ) { Unz_Close(uf); return 0; }
+	crcs = malloc(count * sizeof(*crcs));
+	if ( !crcs ) { Unz_Close(uf); return 0; }
+	if ( Unz_GoToFirstFile(uf) ) goto finish;
+	for ( i = 0; i < count; ++i ) {
+		if ( Unz_GetCurrentFileInfo(uf, &info, NULL, 0, NULL, 0, NULL, 0) ) goto finish;
+		if ( info.uncompressed_size ) crcs[used++] = (int)info.crc;
+		if ( i + 1 < count && Unz_GoToNextFile(uf) ) goto finish;
+	}
+	valid = (int)Com_BlockChecksum(crcs, used * sizeof(*crcs)) == expected;
+	if (!valid) Com_Printf("HTTP verification: %s checksum %08x, server expects %08x\n",
+	                      remote, Com_BlockChecksum(crcs, used * sizeof(*crcs)), expected);
+finish:
+	free(crcs);
+	Unz_Close(uf);
+	return valid;
+}
+
 pack_t *FS_LoadZipFile( char *zipfile, const char *basename ) {
 	pack_t *pack;
 	unzFile uf;

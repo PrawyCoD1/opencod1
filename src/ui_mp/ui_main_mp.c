@@ -412,6 +412,14 @@ void _UI_Refresh( int realtime ) {
 	if ( Menu_Count() > 0 ) {
 		// paint all the menus
 		Menu_PaintAll();
+		if ( trap_Cvar_VariableValue("cl_updateDownloading") != 0 ) {
+			float downloaded = trap_Cvar_VariableValue("cl_updateDownloadedBytes") / (1024.0f * 1024.0f);
+			vec4_t background = { 0, 0, 0, 0.9f };
+			UI_FillRect( 0, 420, 640, 42, background );
+			trap_R_Text_Paint( 20, 445, 0, 0.25f, colorWhite,
+				va("Downloading update: %.1f MB - game will restart when ready", downloaded),
+				0, 0, ITEM_TEXTSTYLE_SHADOWED );
+		}
 		// refresh server browser list
 		UI_DoServerRefresh();
 		// refresh server status

@@ -26,6 +26,40 @@ void Netchan_TransmitNextFragment( netchan_t *chan );
 qboolean NET_CompareAdr( netadr_t a, netadr_t b );
 
 void SV_CloseDownload( client_t *cl );
+/* Kept outside client_t so the game/server ABI stays unchanged. */
+typedef struct {
+	int offered, acknowledged, failed, size, sent;
+	char url[256];
+} svWWW_t;
+static svWWW_t sv_www[MAX_CLIENTS];
+
+static svWWW_t *SV_WWWState(client_t *cl) {
+	return &sv_www[cl - svs.clients];
+}
+
+static void SV_WWWPacket(client_t *cl, msg_t *msg) {
+	svWWW_t *w = SV_WWWState(cl);
+	if (w->acknowledged || (w->sent && svs.time - w->sent < 1000)) return;
+	MSG_WriteByte(msg, 6); /* svc_download */
+	MSG_WriteShort(msg, 65535);
+	MSG_WriteString(w->url, msg);
+	MSG_WriteLong(msg, w->size);
+	MSG_WriteLong(msg, 0); /* connected download */
+	w->sent = svs.time;
+}
+
+static void SV_WWWDownload_f(client_t *cl) {
+	svWWW_t *w = SV_WWWState(cl);
+	const char *command = Cmd_Argv(1);
+	if (!w->offered) return;
+	if (!Q_stricmp(command, "ack")) { w->acknowledged = 1; return; }
+	if (!Q_stricmp(command, "done") && w->acknowledged) { SV_CloseDownload(cl); return; }
+	if (!Q_stricmp(command, "fail") || !Q_stricmp(command, "chkfail")) {
+		SV_CloseDownload(cl);
+		w->failed = 1;
+		SV_SendClientGameState(cl);
+	}
+}
 void SV_UserinfoChanged( client_t *cl );
 
 int Com_HashKey( const char *string, int maxlen );
@@ -622,6 +656,7 @@ void SV_ClientEnterWorld( client_t *cl, usercmd_t *cmd ) {
 /* ---- SV_CloseDownload  0x00454360 ---- */
 void SV_CloseDownload( client_t *cl ) {
 	int i;
+	memset(SV_WWWState(cl), 0, sizeof(svWWW_t));
 
 	if ( cl->download ) {
 		FS_FCloseFile( cl->download );
@@ -689,7 +724,9 @@ void SV_NextDownload_f( client_t *cl ) {
 
 /* ---- SV_BeginDownload_f  0x00454560 ---- */
 void SV_BeginDownload_f( client_t *cl ) {
+	int failed = SV_WWWState(cl)->failed;
 	SV_CloseDownload( cl );
+	SV_WWWState(cl)->failed = failed;
 
 	Q_strncpyz( cl->downloadName, Cmd_Argv( 1 ), sizeof( cl->downloadName ) );
 }
@@ -703,6 +740,10 @@ void SV_WriteDownloadToClient( client_t *cl, msg_t *msg ) {
 	char errorMessage[MAX_STRING_CHARS];
 
 	if ( !cl->downloadName[0] ) {
+		return;
+	}
+	if (SV_WWWState(cl)->offered) {
+		SV_WWWPacket(cl, msg);
 		return;
 	}
 
@@ -757,6 +798,21 @@ void SV_WriteDownloadToClient( client_t *cl, msg_t *msg ) {
 			return;
 		}
 
+		{
+			svWWW_t *w = SV_WWWState(cl);
+			const char *base = Cvar_VariableString("sv_wwwBaseURL");
+			if (!w->failed && atoi(Cvar_VariableString("sv_wwwDownload")) &&
+			    atoi(Info_ValueForKey(cl->userinfo, "cl_wwwDownload")) &&
+			    (!Q_stricmpn(base, "http://", 7) || !Q_stricmpn(base, "https://", 8)) &&
+			    strlen(base) + strlen(cl->downloadName) + 2 < sizeof(w->url)) {
+				Com_sprintf(w->url, sizeof(w->url), "%s%s%s", base,
+				            base[strlen(base)-1] == '/' ? "" : "/", cl->downloadName);
+				w->offered = 1; w->size = cl->downloadSize;
+				FS_FCloseFile(cl->download); cl->download = 0;
+				SV_WWWPacket(cl, msg);
+				return;
+			}
+		}
 		cl->downloadXmitBlock = 0;
 		cl->downloadClientBlock = 0;
 		cl->downloadCurrentBlock = 0;
@@ -1037,6 +1093,7 @@ static ucmd_t ucmds[] = {
 	{ "nextdl",     SV_NextDownload_f },
 	{ "stopdl",     SV_StopDownload_f },
 	{ "donedl",     SV_DoneDownload_f },
+	{ "wwwdl",      SV_WWWDownload_f },
 	{ "retransdl",  SV_RetransmitDownload_f },
 	{ NULL,         NULL }
 };

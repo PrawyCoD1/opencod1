@@ -7,6 +7,7 @@
 #include "../qcommon/hexrays_shim.h"
 #include "../qcommon/cod1_globals.h"
 #include "cl_records.h"
+#include "cl_http.h"
 
 extern int CL_AddReliableCommand();
 extern int CL_InitDownloads();
@@ -593,6 +594,7 @@ void CL_ParseGamestate( msg_t *msg )
 
 	Con_Close();
 
+	CL_HTTPGamestate();
 	CL_ClearState();
 	clc_connectPacketCount = 0;
 
@@ -683,6 +685,7 @@ void __cdecl CL_ParseDownload( msg_t *v0 )
   int v21;
   _BYTE Buffer[16388];
 
+  if ( CL_HTTPRedirect( v0 ) ) return;
   v1 = v0;
   cursize = v0->cursize;
   v3 = v0->readcount + 2;

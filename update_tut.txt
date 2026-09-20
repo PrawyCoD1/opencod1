@@ -1,0 +1,69 @@
+OPENCOD1 — PUBLISHING AN UPDATE
+1. CHANGE THE BUILD NUMBER
+Open:
+C:\Users\Prawy\Documents\GitHub\opencod1\src\qcommon\product_build.h
+Increase PRODUCT_BUILD_NUMBER.
+Example: change 1415 to 1416.
+Every new release needs a higher build number.
+2. BUILD THE RELEASE
+Build the client and DLL projects in Visual Studio using:
+Configuration: Release
+Platform: Win32
+The release files are:
+build\CodMP.exe
+build\main\cgame_mp_x86.dll
+build\main\game_mp_x86.dll
+build\main\ui_mp_x86.dll
+3. OPEN COMMAND PROMPT
+Run:
+cd /d C:\Users\Prawy\Documents\GitHub\opencod1
+4. RUN THE UPDATER TESTS
+tools\tests\run_update_tests.cmd
+Continue only if the tests pass.
+5. GENERATE THE SIGNED MANIFEST
+Run as the same Windows user on the machine containing your release-signing key:
+py -3 tools\make_update_manifest.py --base-url http://91.99.100.203/downloads
+This creates:
+build\updater.txt
+The signing tool is built by the test command above. If needed, build it separately:
+tools\build_update_sign.cmd
+6. VERIFY THE RELEASE
+tools\tests\verify_update_release.cmd
+Continue only if the signature and all four artifact hashes verify.
+After verification, do not modify or rebuild the files. If anything changes, regenerate the manifest and verify again.
+7. UPLOAD THE EXE AND DLL FILES FIRST
+Upload:
+build\CodMP.exe
+→ website-root/downloads/CodMP.exe
+
+build\main\cgame_mp_x86.dll
+→ website-root/downloads/main/cgame_mp_x86.dll
+
+build\main\game_mp_x86.dll
+→ website-root/downloads/main/game_mp_x86.dll
+
+build\main\ui_mp_x86.dll
+→ website-root/downloads/main/ui_mp_x86.dll
+Replace the previous files.
+Wait until ALL four uploads finish successfully.
+8. UPLOAD THE MANIFEST LAST
+Upload:
+build\updater.txt
+→ website-root/updater.txt
+Replace the previous updater.txt.
+Its public address must be:
+http://91.99.100.203/updater.txt
+It goes in the website root, NOT inside downloads.
+Upload it unchanged. Do not edit its contents or let your upload tool convert line endings. Use binary transfer mode if available.
+9. TEST THE LIVE UPDATE
+Launch a client with the signed updater and a LOWER build number.
+Check for updates, confirm installation, and verify that the game restarts into the new build.
+A client already running the published build will not offer that same update.
+IMPORTANT NOTES
+- The first signed client, build 1415, must be distributed manually through a trusted channel to users with older unsigned clients.
+- Keep the existing release-signing key. Do not create a new key for each release.
+- The private key is in your Windows user key store. Losing that Windows profile or machine can prevent future signing.
+- Never upload key-store files, signing tools, or the entire build directory.
+- Upload only the four release files and updater.txt.
+- Signed files prevent undetected modification; HTTP can still be blocked or observed.
+- If mod PK3 files contain their own client/UI DLLs, those packages need updating separately.

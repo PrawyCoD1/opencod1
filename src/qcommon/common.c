@@ -1184,7 +1184,7 @@ void Com_Init( char *commandLine ) {
 
 	s = va( "%s %s build %s %s", "COD MP", "1.1x", getBuildNumber(), "win-x86" );
 	com_version = Cvar_Get( "version", s, CVAR_ROM | CVAR_SERVERINFO );
-	com_shortversion = Cvar_Get( "shortversion", "1.1x", CVAR_ROM | CVAR_SERVERINFO );
+	com_shortversion = Cvar_Get( "shortversion", "1.1x TEST", CVAR_ROM | CVAR_SERVERINFO );
 
 	Sys_Init();
 
