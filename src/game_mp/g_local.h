@@ -346,7 +346,7 @@ struct gclient_s {
 	float recoilYawSpeed;           /* +0x22BC */
 	int recoilState;                /* +0x22C0 */
 };
-G_ASSERT_SIZE( gclient_t, 8900 );
+G_ASSERT_SIZE( gclient_t, 8900 + PLAYERSTATE_EXTRA_BYTES );
 
 /*
  * One entry of level.notifyWatch: a trigger/toucher pair queued by

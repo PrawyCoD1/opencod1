@@ -12,6 +12,7 @@
 #include "tr_tess.h"
 
 extern char xmodel_defaultCollision[];
+extern void CL_CopyRendererConfig( void *output );
 
 extern int Hunk_AllocAlignInternal();
 extern int Hunk_AllocXModelPrecache();
@@ -812,7 +813,7 @@ unsigned int __cdecl RE_BeginRegistration(const char *a1, int *a2)
 
   R_Init(a1);
   v2 = backEndData;
-  qmemcpy(a2, &glConfig_renderer_string, 0xA0u);
+  CL_CopyRendererConfig( a2 );
   if ( tr_registered )
   {
     *(_DWORD *)(v2 + 1636096 + *(_DWORD *)(v2 + 1898240)) = 0;

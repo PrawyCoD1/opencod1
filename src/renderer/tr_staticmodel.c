@@ -12,6 +12,15 @@
 #include "tr_tess.h"
 #include "tr_smcache.h"
 
+/* Native 1.1 DObj model-list entry, including the model index at +8. */
+typedef struct {
+  void *model;
+  const char *tagName;
+  short modelIndex;
+  short padding;
+} staticDObjModel_t;
+typedef char staticDObjModel_size_check[sizeof(staticDObjModel_t) == 12 ? 1 : -1];
+
 extern char xmodel_defaultCollision[];
 
 extern void AnglesToAxis( const float *angles, float *axis );
@@ -1145,7 +1154,7 @@ void __fastcall R_CreateStaticModel(int a1, char *a2, int a3, _DWORD *a4, float 
   int v13;
   _BYTE v14[88]; // [esp+Ch] [ebp-78h] BYREF -- DObj, 0x58 bytes
   int v15[4]; // [esp+64h] [ebp-20h] BYREF -- partBits
-  _DWORD v16[2]; // [esp+74h] [ebp-10h] BYREF -- DObjModel
+  staticDObjModel_t model = {0};
   __int16 v17;
 
   if ( !_strnicmp(a2, "xmodel", 6u) && ((v8 = a2[6], v8 == 47) || v8 == 92) )
@@ -1163,9 +1172,9 @@ void __fastcall R_CreateStaticModel(int a1, char *a2, int a3, _DWORD *a4, float 
       }
       while ( v11 );
       v17 = RE_RegisterModel(a2, (const char *)7);
-      v16[0] = *(_DWORD *)(((int *)tr_models)[v17] + 84);
-      v16[1] = 0;
-      DObjCreate(0, (int)v14, (int)v16, 1u, 0);
+      model.model = *(void **)(((int *)tr_models)[v17] + 84);
+      model.modelIndex = v17;
+      DObjCreate(0, (int)v14, (int)&model, 1u, 0);
       v12 = alloca(96 * v14[23] + 64);
       DObjBindEvalStorage((void *)( ( (unsigned int)v12 + 15 ) & ~15u ), v14);
       Com_Memset(v15, 255, 0x10u);
@@ -1198,7 +1207,7 @@ void __fastcall R_CreateStaticModel(int a1, char *a2, int a3, _DWORD *a4, float 
       *(float *)(v9 + 152) = *(float *)(v9 + 152) + *(float *)(v9 + 72);
       *(_DWORD *)(v9 + 116) = *a6;
       *(_DWORD *)(v9 + 120) = a6[1];
-      v13 = v16[0];
+      v13 = (int)model.model;
       *(_DWORD *)(v9 + 124) = a6[2];
       *(_DWORD *)(v9 + 128) = 0;
       if ( (void *)*(_DWORD *)(v13 + 4) != (void *)xmodel_defaultCollision )
@@ -1241,7 +1250,7 @@ int __cdecl R_AddStaticModelToWorld(int a1)
   bool v20; // c0
   bool v21; // c3
   int result;
-  _DWORD v23[2]; // [esp+14h] [ebp-1Ch] BYREF
+  staticDObjModel_t model = {0};
   __int16 v24;
   int v25[4]; // [esp+20h] [ebp-10h] BYREF
   int v26;
@@ -1276,9 +1285,9 @@ int __cdecl R_AddStaticModelToWorld(int a1)
     v7 = ri_Hunk_Alloc(88);
     v8 = va("xmodel/%s", (const char *)a1);
     v24 = RE_RegisterModel(v8, (const char *)7);
-    v23[0] = *(_DWORD *)(tr_models[v24] + 84);
-    v23[1] = 0;
-    DObjCreate(0, v7, (int)v23, 1u, 0);
+    model.model = *(void **)(tr_models[v24] + 84);
+    model.modelIndex = v24;
+    DObjCreate(0, v7, (int)&model, 1u, 0);
     v26 = v7;
     v9 = ri_Hunk_Alloc(96 * *(unsigned __int8 *)(v7 + 23) + 48);
     *(_DWORD *)(v7 + 4) = v9;
@@ -1397,8 +1406,7 @@ int R_FinishLoadingStaticModels()
   int v9;
   int v10;
   int i;
-  _DWORD v12[2]; // [esp+14h] [ebp-7Ch] BYREF
-  __int16 v13;
+  staticDObjModel_t model = {0};
   int v14[4]; // [esp+20h] [ebp-70h] BYREF
   _BYTE v15[0x58]; // [esp+30h] [ebp-60h] BYREF -- sizeof(DObj)
   unsigned int v18;
@@ -1415,10 +1423,10 @@ int R_FinishLoadingStaticModels()
       v3 = va("xmodel/%s", *(const char **)v2);
       v4 = RE_RegisterModel(v3, (const char *)7);
       v5 = tr_models[v4];
-      v13 = v4;
-      v12[0] = *(_DWORD *)(v5 + 84);
-      v12[1] = 0;
-      DObjCreate(0, (int)v15, (int)v12, 1u, 0);
+      model.modelIndex = v4;
+      model.model = *(void **)(v5 + 84);
+      model.tagName = NULL;
+      DObjCreate(0, (int)v15, (int)&model, 1u, 0);
       v6 = ri_Hunk_AllocateTempMemory(96 * (unsigned __int8)v15[0x17] + 48);
       *(int *)&v15[0x04] = v6;
       v7 = (_DWORD *)(v6 + 32);

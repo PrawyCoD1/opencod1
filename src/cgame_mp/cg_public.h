@@ -37,7 +37,7 @@ typedef int sfxHandle_t;        /* the sound-alias handle cgMedia_t stores */
  * cl.gameState (retail 0x00402EE0); MAX_CONFIGSTRINGS is 0x800, so the string
  * pool is 0x5E84 - 0x800*4 - 4.
  */
-#define MAX_GAMESTATE_CHARS     0x3E80
+#include "../universal/protocol_limits.h"
 
 #define MAX_ENTITIES_IN_SNAPSHOT    256     /* CL_GetSnapshot 0x00401120 */
 #define MAX_CLIENTS_IN_SNAPSHOT     64
@@ -110,15 +110,23 @@ typedef struct clientState_s {
 COD1_ASSERT_SIZE( clientState_t, 92 );
 
 /*
- * trap_GetGameState memcpy target; CL_CgameSystemCalls case 79 copies exactly
- * sizeof( gameState_t ) out of the engine's own copy.
+ * Expanded trap_GetGameState target (syscall 300, with a size check).
+ * Legacy syscall 79 retains the stockGameState_t layout below.
  */
 typedef struct gameState_t {
 	int stringOffsets[MAX_CONFIGSTRINGS];
-	char stringData[MAX_GAMESTATE_CHARS];
+	char stringData[EXTENDED_MAX_GAMESTATE_CHARS];
 	int dataCount;
 } gameState_t;
-COD1_ASSERT_SIZE( gameState_t, 0x5E84 );
+COD1_ASSERT_SIZE( gameState_t, 0x2004 + EXTENDED_MAX_GAMESTATE_CHARS );
+
+/* Preserve the original cgs_t layout. Expanded strings live separately. */
+typedef struct stockGameState_t {
+	int stringOffsets[MAX_CONFIGSTRINGS];
+	char stringData[STOCK_MAX_GAMESTATE_CHARS];
+	int dataCount;
+} stockGameState_t;
+COD1_ASSERT_SIZE( stockGameState_t, 0x5E84 );
 
 /*
  * trap_GetSnapshot's output record.  Every offset below is the constant
@@ -137,7 +145,7 @@ typedef struct snapshot_t {
 	/* +0x127E4 */ int numServerCommands;
 	/* +0x127E8 */ int serverCommandSequence;
 } snapshot_t;
-COD1_ASSERT_SIZE( snapshot_t, 0x127EC );
+COD1_ASSERT_SIZE( snapshot_t, 0x127EC + PLAYERSTATE_EXTRA_BYTES );
 
 /*
 =============================================================================
@@ -385,9 +393,9 @@ typedef enum
 	CG_R_DRAWQUADPIC                       =  76,
 	CG_R_MODELBOUNDS                       =  77,
 	CG_GETGLCONFIG                         =  78,
-	CG_GETGAMESTATE                        =  79,
+	CG_GETGAMESTATE                        =  300, /* expanded buffer, size argument */
 	CG_GETCURRENTSNAPSHOTNUMBER            =  80,
-	CG_GETSNAPSHOT                         =  81,
+	CG_GETSNAPSHOT                         =  301,
 	CG_GETSERVERCOMMAND                    =  82,
 	CG_GETCURRENTCMDNUMBER                 =  83,
 	CG_GETUSERCMD                          =  84,

@@ -275,12 +275,12 @@ static int numDefines[NUM_ANIM_CONDITIONS];                             /* 0x200
 static char defineStrings[10000];                                       /* 0x200865B8 */
 static int defineStringsOffset;                                         /* 0x200865B4 */
 static animStringItem_t defineStr[NUM_ANIM_CONDITIONS][MAX_ANIM_DEFINES];   /* 0x2006D5E8 */
-static int defineBits[NUM_ANIM_CONDITIONS][MAX_ANIM_DEFINES][2];            /* 0x2006DA90 */
+static int defineBits[NUM_ANIM_CONDITIONS][MAX_ANIM_DEFINES][ANIM_MASK_WORDS];            /* 0x2006DA90 */
 
 static scriptAnimMoveTypes_t parseMovetype;     /* 0x2006DA68 */
 static int parseEvent;                          /* 0x2006D5E0 */
 
-static animStringItem_t weaponStrings[MAX_WEAPONS];     /* 0x200A1A80 */
+static animStringItem_t weaponStrings[MAX_WEAPONS + 1];     /* 0x200A1A80 */
 static qboolean weaponStringsInited;                    /* 0x200A06AC */
 
 /*
@@ -796,16 +796,17 @@ BG_ParseConditionBits
   or end of line
 =================
 */
-void BG_ParseConditionBits( char **text_pp, animStringItem_t *stringTable, int condIndex, int result[2] ) {
+void BG_ParseConditionBits( char **text_pp, animStringItem_t *stringTable, int condIndex, int result[ANIM_MASK_WORDS] ) {
 	qboolean endFlag = qfalse;
 	int indexFound;
-	int tempBits[2];
+	int tempBits[ANIM_MASK_WORDS];
+	int word;
 	char currentString[64];
 	qboolean minus = qfalse;
 	char *token;
 
 	currentString[0] = '\0';
-	memset( result, 0, sizeof( result ) );      /* RTCW quirk: clears result[0] only */
+	memset( result, 0, ANIM_MASK_WORDS * sizeof( int ) );      /* RTCW quirk: clears result[0] only */
 	memset( tempBits, 0, sizeof( tempBits ) );
 
 	while ( !endFlag ) {
@@ -866,29 +867,29 @@ void BG_ParseConditionBits( char **text_pp, animStringItem_t *stringTable, int c
 				}
 			}
 			if ( !Q_stricmp( currentString, "all" ) ) {
-				tempBits[0] = ~0x0;
-				tempBits[1] = ~0x0;
+				memset( tempBits, 0xff, sizeof( tempBits ) );
 			} else {
 				// first check this string with our defines
 				indexFound = BG_IndexForString( currentString, defineStr[condIndex], qtrue );
 				if ( indexFound >= 0 ) {
 					// we have precalculated the bitflags for the defines
-					tempBits[0] = defineBits[condIndex][indexFound][0];
-					tempBits[1] = defineBits[condIndex][indexFound][1];
+					memcpy( tempBits, defineBits[condIndex][indexFound], sizeof( tempBits ) );
 				} else {
 					// convert the string into an index
 					indexFound = BG_IndexForString( currentString, stringTable, qfalse );
+					if ( (unsigned)indexFound >= MAX_WEAPONS ) {
+						BG_AnimParseError( "Animation condition index out of range" );
+						return;
+					}
 					// convert the index into a bitflag
-					tempBits[indexFound >> 5] |= 1 << ( indexFound & 31 );
+					tempBits[indexFound >> 5] |= 1u << ( indexFound & 31 );
 				}
 			}
 			// perform operation
 			if ( minus ) {    // subtract
-				result[0] &= ~tempBits[0];
-				result[1] &= ~tempBits[1];
+				for ( word = 0; word < ANIM_MASK_WORDS; word++ ) result[word] &= ~tempBits[word];
 			} else {        // add
-				result[0] |= tempBits[0];
-				result[1] |= tempBits[1];
+				for ( word = 0; word < ANIM_MASK_WORDS; word++ ) result[word] |= tempBits[word];
 			}
 			// clear the currentString
 			currentString[0] = '\0';
@@ -909,11 +910,10 @@ BG_ParseConditions
 =================
 */
 qboolean BG_ParseConditions( char **text_pp, animScriptItem_t *scriptItem ) {
-	int conditionIndex, conditionValue[2];
+	int conditionIndex, conditionValue[ANIM_MASK_WORDS];
 	char    *token;
 
-	conditionValue[0] = 0;
-	conditionValue[1] = 0;
+	memset( conditionValue, 0, sizeof( conditionValue ) );
 
 	while ( 1 ) {
 
@@ -954,8 +954,7 @@ qboolean BG_ParseConditions( char **text_pp, animScriptItem_t *scriptItem ) {
 
 		// now append this condition to the item
 		scriptItem->conditions[scriptItem->numConditions].index = conditionIndex;
-		scriptItem->conditions[scriptItem->numConditions].value[0] = conditionValue[0];
-		scriptItem->conditions[scriptItem->numConditions].value[1] = conditionValue[1];
+		memcpy( scriptItem->conditions[scriptItem->numConditions].value, conditionValue, sizeof( conditionValue ) );
 		scriptItem->numConditions++;
 	}
 
@@ -1524,12 +1523,16 @@ qboolean BG_EvaluateConditions( clientInfo_t *ci, animScriptItem_t *scriptItem )
 	for ( i = 0, cond = scriptItem->conditions; i < scriptItem->numConditions; i++, cond++ )
 	{
 		switch ( animConditionsTable[cond->index].type ) {
-		case ANIM_CONDTYPE_BITFLAGS:
-			if ( !( ci->conditions[cond->index][0] & cond->value[0] ) &&
-				 !( ci->conditions[cond->index][1] & cond->value[1] ) ) {
+		case ANIM_CONDTYPE_BITFLAGS: {
+			int word;
+			for ( word = 0; word < ANIM_MASK_WORDS; word++ ) {
+				if ( ci->conditions[cond->index][word] & cond->value[word] ) break;
+			}
+			if ( word == ANIM_MASK_WORDS ) {
 				return qfalse;
 			}
 			break;
+		}
 		case ANIM_CONDTYPE_VALUE:
 			if ( !( ci->conditions[cond->index][0] == cond->value[0] ) ) {
 				return qfalse;
@@ -1833,8 +1836,8 @@ void BG_UpdateConditionValue( int client, int condition, int value, qboolean che
 		if ( animConditionsTable[condition].type == ANIM_CONDTYPE_BITFLAGS ) {
 			// we want the explicit value passed in, and COM_BitSet ORs on top of
 			// whatever is there, so clear it first
-			bg_clientinfo[client].conditions[condition][0] = 0;
-			bg_clientinfo[client].conditions[condition][1] = 0;
+			memset( bg_clientinfo[client].conditions[condition], 0, sizeof( bg_clientinfo[client].conditions[condition] ) );
+			if ( (unsigned)value >= MAX_WEAPONS ) { Com_Error( ERR_DROP, "Animation condition index out of range" ); return; }
 
 			bg_clientinfo[client].conditions[condition][value >> 5] |= 1 << ( value & 31 );
 			return;

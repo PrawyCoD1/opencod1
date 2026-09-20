@@ -580,7 +580,7 @@ void CG_EntityEvent( centity_t *cent, int event, qboolean predicted ) {
 	case EV_ITEM_PICKUP_QUIET:
 	case EV_AMMO_PICKUP:
 		item = es->eventParm;
-		if ( item < 1 || item >= 70 ) {
+		if ( item < 1 || item >= BG_NUM_ITEMS ) {
 			break;
 		}
 		if ( event == EV_ITEM_PICKUP ) {

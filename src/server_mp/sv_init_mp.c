@@ -363,11 +363,11 @@ void SV_EnableArchivedSnapshot( qboolean enable ) {
 		return;
 	}
 
-	svs.cachedSnapshotFrames   = (cachedSnapshot_t *)Z_MallocInternal( SV_CACHED_SNAPSHOT_FRAMES_BYTES );
-	svs.cachedSnapshotEntities = (archivedEntity_t *)Z_MallocInternal( SV_CACHED_SNAPSHOT_ENTITIES_BYTES );
+	svs.cachedSnapshotFrames   = (cachedSnapshot_t *)Z_MallocInternal( SV_NUM_CACHED_SNAPSHOT_FRAMES * sizeof( cachedSnapshot_t ) );
+	svs.cachedSnapshotEntities = (archivedEntity_t *)Z_MallocInternal( SV_NUM_CACHED_SNAPSHOT_ENTITIES * sizeof( archivedEntity_t ) );
 	svs.archivedSnapshotFrames = (archivedSnapshot_t *)Z_MallocInternal( SV_ARCHIVED_SNAPSHOT_FRAMES_BYTES );
 	svs.archivedSnapshotBuffer = (byte *)Z_MallocInternal( SV_ARCHIVED_SNAPSHOT_BUFFER_BYTES );
-	svs.cachedSnapshotClients  = (cachedClient_t *)Z_MallocInternal( SV_CACHED_SNAPSHOT_CLIENTS_BYTES );
+	svs.cachedSnapshotClients  = (cachedClient_t *)Z_MallocInternal( SV_NUM_CACHED_SNAPSHOT_CLIENTS * sizeof( cachedClient_t ) );
 }
 
 /* ---- SV_InitArchivedSnapshot  0x004586B0 ---- */
@@ -593,6 +593,8 @@ void SV_Init( void ) {
 	sv_gametype = Cvar_Get( "g_gametype", "dm", CVAR_LATCH | CVAR_SERVERINFO );
 	Cvar_Get( "sv_keywords", "", CVAR_SERVERINFO );
 	Cvar_Get( "protocol", va( "%i", PROTOCOL_VERSION ), CVAR_ROM | CVAR_SERVERINFO );
+	Cvar_Get( "xtndedbuild", va( "%i", OPENCOD_EXTENDED_BUILD ),
+		CVAR_SERVERINFO | CVAR_ROM | CVAR_NORESTART );
 	sv_mapname = Cvar_Get( "mapname", "nomap", CVAR_ROM | CVAR_SERVERINFO );
 	sv_privateClients = Cvar_Get( "sv_privateClients", "0", CVAR_SERVERINFO );
 	sv_hostname = Cvar_Get( "sv_hostname", "CoDHost", CVAR_ARCHIVE | CVAR_SERVERINFO );

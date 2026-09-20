@@ -4146,7 +4146,8 @@ int __cdecl MergeImageList(int a1, int a2, int a3, int a4)
           *(_DWORD *)(a2 + 4 * i - 8) = v6 - 3;
           if ( i < a3 )
           {
-            qmemcpy((void *)(a2 + 4 * i - 4), (const void *)(a2 + 4 * i), 4 * (a3 - i));
+            /* Compact the pointer list in place after merging two images. */
+            memmove((void *)(a2 + 4 * i - 4), (const void *)(a2 + 4 * i), 4 * (a3 - i));
             v5 = v16;
             i = a3;
           }

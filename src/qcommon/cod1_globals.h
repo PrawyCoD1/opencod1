@@ -39,8 +39,6 @@ extern int EndFrame;   /* 0x00CA2754, 4 bytes */
 extern int EndRegistration;   /* 0x00CA2700, 4 bytes */
 extern unsigned char File[608];   /* 0x005700C8, 608 bytes */
 extern unsigned char FileName[32];   /* 0x008E3B10, 32 bytes */
-extern int (*FindNextSibling)();   /* 0x00976478, indirect call target */
-extern int (*FindObject)();   /* 0x009B647C, indirect call target */
 extern int FinishLoadingModels;   /* 0x00CA26E4, 12 bytes */
 extern int FreeImageAllocations;   /* 0x00CA277C, 4 bytes */
 extern int GetFarPlaneDist;   /* 0x00CA26FC, 4 bytes */
@@ -430,7 +428,7 @@ extern signed __int32 cgameUserCmdValue;   /* 0x0143A974, 4 bytes */
 extern int (*cgame_RestoreExportTable)();   /* 0x014328C0, indirect call target */
 extern int (*cgame_SaveExportTable)();   /* 0x014328BC, indirect call target */
 extern int (*cgvm_dllEntry)();   /* 0x01432898, indirect call target */
-extern unsigned char chan[32832];   /* 0x015EF020, 32832 bytes */
+extern unsigned char chan[2 * MAX_MSGLEN + 68];   /* 0x015EF020, 32832 bytes */
 extern char cinTable[10496];   /* 0x00877728, 10496 bytes */
 extern int cl_active;   /* 0x01432960, 4 bytes */
 extern cvar_t *cl_allowDownload;   /* 0x0143284C, 4 bytes */
@@ -494,7 +492,7 @@ extern int cl_snap_ps_commandTime;   /* 0x01432980, 64 bytes */
 extern int cl_snap_serverTime;   /* 0x0143296C, 4 bytes */
 extern unsigned char cl_snap_snapFlags[4];   /* 0x01432968, 4 bytes */
 extern int cl_snap_valid;   /* 0x01432964, 4 bytes */
-extern int cl_snapshots[67584];   /* 0x0143B134, 270336 bytes */
+extern int cl_snapshots[67584 + 32 * PLAYERSTATE_EXTRA_BYTES / 4];   /* 0x0143B134, 270336 bytes */
 extern cvar_t *cl_stance;   /* 0x0142F5E8, 4 bytes */
 extern cvar_t *cl_stanceTemp;   /* 0x0142F5F0, 4 bytes */
 extern cvar_t *cl_timeNudge;   /* 0x01617308, 4 bytes */

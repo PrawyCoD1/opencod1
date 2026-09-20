@@ -27,7 +27,7 @@ extern int   MSG_ReadBits( msg_t *msg, int bits );
 extern void  CL_ClearState( void );
 extern void  FS_Restart( int checksumFeed );
 extern cvar_t *fs_gamedirvar;
-extern int MSG_ReadBitsCompress( const byte *input, byte *outputBuf, int readsize );
+extern int MSG_ReadBitsCompress( const byte *input, byte *outputBuf, int readsize, int capacity );
 extern qboolean MSG_ReadDeltaClient( msg_t *msg, const byte *from, byte *to,
                                      int number );
 extern void MSG_ReadDeltaPlayerstate( msg_t *msg, const byte *from, byte *to,
@@ -616,7 +616,7 @@ void CL_ParseGamestate( msg_t *msg )
 			s   = MSG_ReadBigString( msg );
 			len = strlen( s );
 
-			if ( len + 1 + cl_gameState_dataCount > 0x3E80 ) {
+			if ( len + 1 + cl_gameState_dataCount > Protocol_GameStateLimit( clc_serverBuild >= 0 ) ) {
 				Com_Error( ERR_DROP, "\x15" "MAX_GAMESTATE_CHARS exceeded" );
 			}
 
@@ -840,7 +840,7 @@ char *__cdecl CL_ParseCommandString(msg_t *a1)
 void CL_ParseServerMessage( msg_t *source )
 {
 	msg_t msg;
-	byte  to[0x4000];
+	byte  to[MAX_MSGLEN];
 	int   cmd;
 
 	if ( cl_shownet->integer == 1 ) {
@@ -856,8 +856,9 @@ void CL_ParseServerMessage( msg_t *source )
 	Com_Memset( &msg, 0, sizeof( msg ) );
 	msg.data    = to;
 	msg.maxsize = sizeof( to );
+	msg.extended = clc_serverBuild >= 0;
 	msg.cursize = MSG_ReadBitsCompress( source->data + source->readcount, to,
-	                                    source->cursize - source->readcount );
+	                                    source->cursize - source->readcount, sizeof( to ) );
 
 	while ( 1 ) {
 		if ( msg.readcount > msg.cursize ) {

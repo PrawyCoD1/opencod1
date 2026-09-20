@@ -6,22 +6,26 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include <time.h>
 
-static FILE *crash_fp;
+/* Reporting must not enter the CRT allocator: the original exception may
+ * already be inside a damaged heap, or on a driver thread without CRT state. */
+static HANDLE crash_file = INVALID_HANDLE_VALUE;
+static volatile LONG crash_reporting;
 
 static void CR_Printf( const char *fmt, ... ) {
+	char text[2048];
+	DWORD written;
+	int length;
 	va_list ap;
 	va_start( ap, fmt );
-	vfprintf( stderr, fmt, ap );
+	/* All formats are internal, with bounded module paths and integer values.
+	 * Win32 wvsprintf has a 1024-character output limit. */
+	length = wvsprintfA( text, fmt, ap );
 	va_end( ap );
-	if ( crash_fp ) {
-		va_start( ap, fmt );
-		vfprintf( crash_fp, fmt, ap );
-		va_end( ap );
+	if ( length > 0 && crash_file != INVALID_HANDLE_VALUE ) {
+		WriteFile( crash_file, text, (DWORD)length, &written, NULL );
 	}
 }
 
@@ -42,7 +46,7 @@ static void CR_Where( char *out, int outSize, unsigned long addr ) {
 	}
 	base = strrchr( path, '\\' );
 	base = base ? base + 1 : path;
-	_snprintf( out, outSize, "%s+0x%lX", base,
+	wsprintfA( out, "%s+0x%lX", base,
 	           addr - (unsigned long) mbi.AllocationBase );
 	out[outSize - 1] = 0;
 }
@@ -65,15 +69,19 @@ static LONG WINAPI Cod1_CrashFilter( EXCEPTION_POINTERS *ep ) {
 	CONTEXT *cx = ep->ContextRecord;
 	unsigned int *frame;
 	char where[MAX_PATH + 32];
-	time_t now;
+	SYSTEMTIME now;
 	int i;
 
-	if ( !crash_fp ) {
-		crash_fp = fopen( "crash_mp.txt", "a" );
+	/* A second fault must reach Windows rather than recurse into reporting. */
+	if ( InterlockedCompareExchange( &crash_reporting, 1, 0 ) ) {
+		return EXCEPTION_CONTINUE_SEARCH;
 	}
-	time( &now );
-
-	CR_Printf( "\n=== crash === %s", ctime( &now ) );
+	crash_file = CreateFileA( "crash_mp.txt", FILE_APPEND_DATA,
+		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL, NULL );
+	GetLocalTime( &now );
+	CR_Printf( "\n=== crash === %04u-%02u-%02u %02u:%02u:%02u\n",
+		now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond );
 	CR_Printf( "  pid    %lu\n", (unsigned long) GetCurrentProcessId() );
 	CR_Printf( "  code   0x%08lX  %s\n",
 	           (unsigned long) er->ExceptionCode, ExceptionName( er->ExceptionCode ) );
@@ -97,7 +105,9 @@ static LONG WINAPI Cod1_CrashFilter( EXCEPTION_POINTERS *ep ) {
 		extern const char *Cod1_HangWatchdogLastNote( void );
 		const char *note = Cod1_HangWatchdogLastNote();
 		if ( note ) {
-			CR_Printf( "  last   %s\n", note );
+			char boundedNote[512];
+			lstrcpynA( boundedNote, note, sizeof( boundedNote ) );
+			CR_Printf( "  last   %s\n", boundedNote );
 		}
 	}
 
@@ -136,56 +146,26 @@ static LONG WINAPI Cod1_CrashFilter( EXCEPTION_POINTERS *ep ) {
 	}
 
 	CR_Printf( "=== end crash ===\n" );
-	fflush( stderr );
-	if ( crash_fp ) {
-		fflush( crash_fp );
+	if ( crash_file != INVALID_HANDLE_VALUE ) {
+		FlushFileBuffers( crash_file );
+		CloseHandle( crash_file );
+		crash_file = INVALID_HANDLE_VALUE;
 	}
 
-	return EXCEPTION_EXECUTE_HANDLER;
-}
-
-/* First-chance pass.  SetUnhandledExceptionFilter only sees what nothing
-   else handled, and a stack overflow leaves it no stack to run on.
-   A vectored handler runs before any frame-based handler, and
-   SetThreadStackGuarantee keeps a reserve the handler can use after the guard
-   page is gone.  Logged once; the search then continues as before. */
-static int crash_firstChanceDone;
-
-static LONG WINAPI Cod1_FirstChance( EXCEPTION_POINTERS *ep ) {
-	switch ( ep->ExceptionRecord->ExceptionCode ) {
-	case EXCEPTION_ACCESS_VIOLATION:
-	case EXCEPTION_STACK_OVERFLOW:
-	case EXCEPTION_ILLEGAL_INSTRUCTION:
-	case EXCEPTION_PRIV_INSTRUCTION:
-	case EXCEPTION_INT_DIVIDE_BY_ZERO:
-	case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
-	case EXCEPTION_IN_PAGE_ERROR:
-		if ( !crash_firstChanceDone ) {
-			crash_firstChanceDone = 1;
-			Cod1_CrashFilter( ep );
-		}
-		break;
-	default:
-		break;
-	}
+	/* Preserve the original exception for Windows Error Reporting and dumps. */
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
 void Cod1_InstallCrashReporter( void ) {
-	/* Both APIs are newer than the VC7 SDK (XP SP1 / 2003), so they are
-	   resolved at run time; the reporter is scaffolding, not retail code. */
 	HMODULE k32 = GetModuleHandleA( "kernel32.dll" );
 	BOOL ( WINAPI *pSetThreadStackGuarantee )( ULONG * ) =
 		(BOOL ( WINAPI * )( ULONG * )) GetProcAddress( k32, "SetThreadStackGuarantee" );
-	PVOID ( WINAPI *pAddVectoredExceptionHandler )( ULONG, PVECTORED_EXCEPTION_HANDLER ) =
-		(PVOID ( WINAPI * )( ULONG, PVECTORED_EXCEPTION_HANDLER )) GetProcAddress( k32, "AddVectoredExceptionHandler" );
 	ULONG guarantee = 64 * 1024;
 
 	if ( pSetThreadStackGuarantee ) {
 		pSetThreadStackGuarantee( &guarantee );
 	}
-	if ( pAddVectoredExceptionHandler ) {
-		pAddVectoredExceptionHandler( 1, Cod1_FirstChance );
-	}
+	/* Do not report first-chance exceptions. Drivers and libraries may handle
+	 * those themselves; our reporter runs only after their handlers decline. */
 	SetUnhandledExceptionFilter( Cod1_CrashFilter );
 }

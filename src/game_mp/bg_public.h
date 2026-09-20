@@ -79,7 +79,12 @@ void PmoveSingle( pmove_t *pmove );
  * 64 weapon bits.  BG_GetConditionValue (0x20003300) walks the ANIM_COND_WEAPONS
  * bit set to 0x40, and bg_itemlist reserves exactly 64 weapon slots.
  */
-#define MAX_WEAPONS 64
+#define MAX_WEAPONS WEAPON_SLOTS
+#define BG_NUM_ITEMS 261
+#define ANIM_MASK_WORDS WEAPON_MASK_WORDS
+
+/* Keep stock health/ammo item IDs 65..69 unchanged. */
+static int BG_WeaponItemIndex( int weapon ) { return weapon <= 64 ? weapon : weapon + 5; }
 
 /*
  * The weapon-file parse table is bg_weaponInfoFields at 0x2006ADD0: 248
@@ -675,9 +680,9 @@ COD1_ASSERT_SIZE( animation_t, 92 );
 typedef struct animScriptCondition_t
 {
 	int index;
-	int value[2];
+	int value[ANIM_MASK_WORDS];
 } animScriptCondition_t;
-COD1_ASSERT_SIZE( animScriptCondition_t, 12 );
+COD1_ASSERT_SIZE( animScriptCondition_t, 36 );
 
 /* soundIndex is a full int here; RTCW's is a short. */
 typedef struct animScriptCommand_t
@@ -696,7 +701,7 @@ typedef struct animScriptItem_t
 	int numCommands;
 	animScriptCommand_t commands[MAX_ANIMSCRIPT_ANIMCOMMANDS];
 } animScriptItem_t;
-COD1_ASSERT_SIZE( animScriptItem_t, 244 );
+COD1_ASSERT_SIZE( animScriptItem_t, 244 + 24 * NUM_ANIM_CONDITIONS );
 
 typedef struct animScript_t
 {
@@ -748,7 +753,7 @@ typedef struct animScriptData_t
 	   CG_PlayEntitySoundAliasByName 0x30021BC0, are both ( int, const char * ). */
 	void ( *playSound )( int clientNum, const char *name );
 } animScriptData_t;
-COD1_ASSERT_SIZE( animScriptData_t, 636632 );
+COD1_ASSERT_SIZE( animScriptData_t, 636632 + 24 * NUM_ANIM_CONDITIONS * MAX_ANIMSCRIPT_ITEMS_PER_MODEL );
 
 /*
  * bg_clientinfo's capacity: BG_CreateClientAnimTrees walks the array from the
@@ -838,13 +843,13 @@ typedef struct clientInfo_t
 	                                                           never read here.  Name inferred from UO. */
 	int dobjNeedsUpdate;                            /* +0x3F4  raised 0x2000393D, tested and cleared by
 	                                                           BG_UpdatePlayerDObj 0x20004D51/0x20004E0A */
-	int conditions[NUM_ANIM_CONDITIONS][2];         /* +0x3F8  BG_UpdateConditionValue 0x200032E9 */
+	int conditions[NUM_ANIM_CONDITIONS][ANIM_MASK_WORDS];         /* +0x3F8  BG_UpdateConditionValue 0x200032E9 */
 	void *animTree;                                 /* +0x440  survives ClientConnect's memset; filled by
 	                                                           GScr_LoadScripts 0x20004F39 */
 	int dobjWeapon;                                 /* +0x444  the es->weapon the DObj was built for,
 	                                                           BG_UpdatePlayerDObj 0x20004D49/0x20004E04 */
 } clientInfo_t;
-COD1_ASSERT_SIZE( clientInfo_t, 1096 );
+COD1_ASSERT_SIZE( clientInfo_t, 1096 + 24 * NUM_ANIM_CONDITIONS );
 
 extern clientInfo_t bg_clientinfo[MAX_CLIENTS];     /* 0x2013D36C */
 

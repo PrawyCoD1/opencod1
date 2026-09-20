@@ -142,9 +142,9 @@ static void CG_ResetEntity( centity_t *cent ) {
 		// freeze a copy of the client's animation record on the corpse
 		num = cent->currentState.number - MAX_CLIENTS;
 		ci = &bg_clientinfo[ cent->currentState.clientNum ];
-		corpseTree = cgs.corpseinfo[num].animTree;
-		cgs.corpseinfo[num] = *ci;
-		cgs.corpseinfo[num].animTree = corpseTree;
+		corpseTree = cg_corpseinfo[num].animTree;
+		cg_corpseinfo[num] = *ci;
+		cg_corpseinfo[num].animTree = corpseTree;
 
 		if ( cent->currentState.eFlags & EF_CORPSE_KEEPANIM ) {
 			cent->previousEventSequence = 0;

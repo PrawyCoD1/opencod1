@@ -12,7 +12,7 @@ void MSG_WriteBits( msg_t *msg, int value, int bits );
 void MSG_WriteBit0( msg_t *msg );
 void MSG_WriteBit1( msg_t *msg );
 void MSG_WriteString( const char *s, msg_t *sb );
-int MSG_WriteBitsCompress( const byte *datasrc, int bytecount, byte *buffdest );
+int MSG_WriteBitsCompress( const byte *datasrc, int bytecount, byte *buffdest, int capacity );
 void MSG_WriteDeltaEntity( msg_t *msg, const byte *from, const byte *to, qboolean force );
 void MSG_WriteDeltaClient( msg_t *msg, const byte *from, const byte *to, qboolean force );
 void MSG_WriteDeltaPlayerstate( msg_t *msg, const byte *from, const byte *to, int number );
@@ -646,6 +646,7 @@ cachedSnapshot_t *SV_GetCachedSnapshotInternal( int frameNum ) {
 	}
 
 	MSG_Init( &msg, buf, SV_ARCHIVE_MSG_BYTES );
+	msg.extended = qtrue;
 	len = archived->len;
 	msg.cursize = len;
 
@@ -1080,7 +1081,7 @@ void SV_SendMessageToClient( msg_t *msg, client_t *client ) {
 	byte outBuf[MAX_MSGLEN];
 
 	*(int *)outBuf = *(const int *)msg->data;
-	len = 4 + MSG_WriteBitsCompress( msg->data + 4, msg->cursize - 4, outBuf + 4 );
+	len = 4 + MSG_WriteBitsCompress( msg->data + 4, msg->cursize - 4, outBuf + 4, sizeof( outBuf ) - 4 );
 
 	if ( client->dropReason ) {
 		SV_DropClient( client, client->dropReason );
@@ -1126,7 +1127,8 @@ void SV_SendClientSnapshot( client_t *cl ) {
 		SV_BuildClientSnapshot( cl );
 	}
 
-	MSG_Init( &msg, msgBuffer, sizeof( msgBuffer ) );
+	MSG_Init( &msg, msgBuffer, cl->netchan.extended ? MAX_MSGLEN : STOCK_MAX_MSGLEN );
+	msg.extended = cl->netchan.extended;
 
 	MSG_WriteLong( &msg, cl->lastClientCommand );
 
@@ -1149,7 +1151,8 @@ void SV_SendClientSnapshot( client_t *cl ) {
 		if ( cl->state == CS_ACTIVE || cl->state == CS_ZOMBIE ) {
 			SV_PrintServerCommandsForClient( cl );
 
-			MSG_Init( &msg, msgBuffer, sizeof( msgBuffer ) );
+			MSG_Init( &msg, msgBuffer, cl->netchan.extended ? MAX_MSGLEN : STOCK_MAX_MSGLEN );
+	msg.extended = cl->netchan.extended;
 			MSG_WriteLong( &msg, cl->lastClientCommand );
 			SV_UpdateServerCommandsToClient_PreventOverflow( &msg, cl, MAX_MSGLEN );
 			MSG_WriteByte( &msg, svc_EOF );
@@ -1524,6 +1527,7 @@ void SV_ArchiveSnapshot( void ) {
 
 	/* MSG_Init is retail's own lazy MSG_initHuffman gate plus the memset, data and maxsize stores -- exactly what is inlined at 0x0045DEBC. */
 	MSG_Init( &msg, buf, SV_ARCHIVE_MSG_BYTES );
+	msg.extended = qtrue;
 
 	oldestFrame = svs.nextCachedSnapshotFrames - SV_NUM_CACHED_SNAPSHOT_FRAMES;
 	if ( oldestFrame < 0 ) {

@@ -769,7 +769,7 @@ void CG_Player( centity_t *cent ) {
 ===============
 CG_Corpse
 
-An ET_CORPSE keeps its own frozen clientInfo_t in cgs.corpseinfo, so the DObj
+An ET_CORPSE keeps its own frozen clientInfo_t in cg_corpseinfo, so the DObj
 has to be brought up to date here rather than in CG_UpdatePlayerDObj.
 ===============
 */
@@ -785,7 +785,7 @@ void CG_Corpse( centity_t *cent ) {
 		return;
 	}
 
-	ci = &cgs.corpseinfo[es->number - MAX_CLIENTS];
+	ci = &cg_corpseinfo[es->number - MAX_CLIENTS];
 
 	obj = trap_syscall_0xA2( es->number );
 	BG_UpdatePlayerDObj( obj, es, ci );

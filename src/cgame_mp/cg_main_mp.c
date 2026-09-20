@@ -130,13 +130,15 @@ extern scr_anim_t bgs_turningAnim;                      /* 0x3018BC08 */
 
 cg_t cg;                                                /* 0x301E2140 */
 cgs_t cgs;                                              /* 0x301CC0A0 */
+gameState_t cg_gameState;
+clientInfo_t cg_corpseinfo[MAX_CORPSES];
 centity_t cg_entities[MAX_GENTITIES];                   /* 0x3020DB80 */
 cgWeaponInfo_t cg_weapons[MAX_WEAPONS_CG];              /* 0x301A6940 */
 
 /* cg_weapons_mp.c's itemInfo_t: 256 records of 36 bytes (CG_RegisterItemVisuals
    0x30036082 indexes with `lea ebp,[eax+eax*8]`, and CG_Init clears 0x2400).
    RTCW defines cg_items in cg_main.c, so it is defined here. */
-byte cg_items[256 * 36];                                /* 0x301DC3E0 */
+byte cg_items[BG_NUM_ITEMS * 36];                                /* 0x301DC3E0 */
 
 displayContextDef_t cgDC;                               /* 0x301AD720 */
 
@@ -1066,7 +1068,7 @@ const char *CG_ConfigString( int index ) {
 	if ( index < 0 || index >= MAX_CONFIGSTRINGS ) {
 		CG_Error( "CG_ConfigString: bad index: %i", index );
 	}
-	return cgs.gameState.stringData + cgs.gameState.stringOffsets[index];
+	return cg_gameState.stringData + cg_gameState.stringOffsets[index];
 }
 
 /*
@@ -1794,6 +1796,8 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 
 	/* clear everything */
 	memset( &cgs, 0, sizeof( cgs ) );
+	memset( &cg_gameState, 0, sizeof( cg_gameState ) );
+	memset( cg_corpseinfo, 0, sizeof( cg_corpseinfo ) );
 	memset( &cg, 0, sizeof( cg ) );
 	memset( cg_entities, 0, sizeof( cg_entities ) );
 	memset( cg_weapons, 0, sizeof( cg_weapons ) );
@@ -1836,7 +1840,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 	cgs.screenYScale = cgs.glconfig.vidHeight * ( 1.0 / 480.0 );
 
 	/* get the rendering configuration from the client system */
-	trap_GetGameState( &cgs.gameState );
+	trap_GetGameState( &cg_gameState );
 
 	/* check version */
 	s = CG_ConfigString( 2 );                /* CS_GAME_VERSION */

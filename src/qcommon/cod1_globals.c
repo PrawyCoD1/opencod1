@@ -41,8 +41,7 @@ int EndFrame;
 int EndRegistration;
 unsigned char File[608];
 unsigned char FileName[32];
-int (*FindNextSibling)();
-int (*FindObject)();
+/* FindNextSibling and FindObject are functions implemented in scr_variable.cpp. */
 int FinishLoadingModels;
 int FreeImageAllocations;
 int GetFarPlaneDist;
@@ -114,7 +113,8 @@ unsigned char WSAData[400];
 int X;
 cvar_t *X_r_inGameVideo;
 int Y;
-unsigned short __ImageBase;
+/* __ImageBase is supplied by the PE linker, not a storage variable. Defining
+ * it here also makes the CRT pass the wrong hInstance to WinMain. */
 int __security_cookie;
 char aBadIndexInTria[36];
 unsigned char aBufferOverflow[96];
@@ -429,7 +429,7 @@ signed __int32 cgameUserCmdValue;
 int (*cgame_RestoreExportTable)();
 int (*cgame_SaveExportTable)();
 int (*cgvm_dllEntry)();
-unsigned char chan[32832];
+unsigned char chan[2 * MAX_MSGLEN + 68];
 int cl_active;
 cvar_t *cl_allowDownload;
 cvar_t *cl_anglespeedkey;
@@ -491,7 +491,7 @@ int cl_snap_ps_commandTime;
 int cl_snap_serverTime;
 unsigned char cl_snap_snapFlags[4];
 int cl_snap_valid;
-int cl_snapshots[67584];
+int cl_snapshots[67584 + 32 * PLAYERSTATE_EXTRA_BYTES / 4];
 cvar_t *cl_stance;
 cvar_t *cl_stanceTemp;
 cvar_t *cl_timeNudge;

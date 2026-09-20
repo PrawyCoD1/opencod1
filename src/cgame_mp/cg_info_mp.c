@@ -102,7 +102,7 @@ void CG_DrawInformation( int localized ) {
 		s = buf;
 	} else {
 		/* CG_ConfigString( CS_SERVERINFO ) inlined (0x3001FB0F). */
-		s = Info_ValueForKey( cgs.gameState.stringData + cgs.gameState.stringOffsets[0],
+		s = Info_ValueForKey( cg_gameState.stringData + cg_gameState.stringOffsets[0],
 							  "mapname" );
 	}
 

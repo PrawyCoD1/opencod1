@@ -24,6 +24,8 @@
 #ifndef __CG_LOCAL_H__
 #define __CG_LOCAL_H__
 
+#include <stddef.h>
+
 #include "../universal/q_shared.h"
 #include "../qcommon/cmd_history.h"
 #include "../game_mp/bg_public.h"
@@ -62,7 +64,7 @@
 #define MAX_CORPSES             8
 /* CG_RegisterWeapon's stride into cg_weapons (0x30034D21) against the 0x6600
    CG_Init clears. */
-#define MAX_WEAPONS_CG          64
+#define MAX_WEAPONS_CG          MAX_WEAPONS
 /* configstrings 268..523 (CG_ConfigStringModified 0x3002C827). */
 #define MAX_MODELS              256
 /* configstrings 780..843 (0x3002C84B). */
@@ -511,7 +513,7 @@ typedef struct cg_s {
 
 	shellshock_t shellshock;                /* +0x2B470 */
 } cg_t;
-CG_ASSERT_SIZE( cg_t, 0x2B498 );
+CG_ASSERT_SIZE( cg_t, 0x2B498 + 3 * PLAYERSTATE_EXTRA_BYTES );
 
 /*
 =============================================================================
@@ -624,7 +626,7 @@ typedef struct cgMedia_t {
 CG_ASSERT_SIZE( cgMedia_t, 2636 );
 
 typedef struct cgs_s {
-	gameState_t gameState;                  /* +0x00000 from the server */
+	stockGameState_t legacyGameState;       /* +0x00000 reserved stock layout */
 	glconfig_t glconfig;                    /* +0x05E84 trap 78 (CG_Init 0x3002305D) */
 	float screenXScale;                     /* +0x05F24 vidWidth / 640 */
 	float screenYScale;                     /* +0x05F28 vidHeight / 480 */
@@ -693,9 +695,11 @@ typedef struct cgs_s {
 	/* ET_CORPSE entities keep a frozen copy of the client's animation record:
 	   CG_ResetEntity copies bg_clientinfo[es.clientNum] over
 	   corpseinfo[es.number - 64] (0x3002F97B, 0x448 bytes). */
-	clientInfo_t corpseinfo[MAX_CORPSES];   /* +0x0A43C */
+	byte legacyCorpseinfo[MAX_CORPSES * 1096];   /* +0x0A43C */
 } cgs_t;
 CG_ASSERT_SIZE( cgs_t, 0xC67C );
+typedef char cgs_glconfig_offset_check[offsetof( cgs_t, glconfig ) == 0x5E84 ? 1 : -1];
+typedef char cgs_media_offset_check[offsetof( cgs_t, media ) == 0x99E4 ? 1 : -1];
 
 /*
 =============================================================================
@@ -707,6 +711,8 @@ CG_ASSERT_SIZE( cgs_t, 0xC67C );
 
 extern cg_t cg;                                         /* 0x301E2140 */
 extern cgs_t cgs;                                       /* 0x301CC0A0 */
+extern gameState_t cg_gameState;
+extern clientInfo_t cg_corpseinfo[MAX_CORPSES];
 extern centity_t cg_entities[MAX_GENTITIES];            /* 0x3020DB80 */
 /* RTCW's name for the array CG_RegisterWeapon fills; the recovered `cg_weapons`
    symbol at 0x300EEF3C is a different thing -- the pointer CG_RegisterWeapon

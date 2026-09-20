@@ -33,8 +33,8 @@
  * SaveRegisteredItems' loop ends at bg_itemlist + 70 * 48 (0x2016EAB8), and
  * ClearRegisteredItems memsets 1024 bytes of the flag array.
  */
-#define BG_NUM_ITEMS            70
-#define MAX_ITEMS               256
+
+#define MAX_ITEMS               BG_NUM_ITEMS
 
 /* trap_SetConfigstring slot SaveRegisteredItems writes (0x200245B1). */
 #define CS_ITEMS                8
@@ -940,7 +940,7 @@ gentity_t *Drop_Weapon( gentity_t *ent, int weapon, const char *tagName ) {
 		return NULL;
 	}
 
-	dropped = Drop_Item( ent, &bg_itemlist[weapon], 0, qfalse );
+	dropped = Drop_Item( ent, &bg_itemlist[BG_WeaponItemIndex( weapon )], 0, qfalse );
 
 	if ( ent->client ) {
 		ammoCount = ent->client->ps.ammo[ammoIndex];
@@ -1201,14 +1201,14 @@ void RegisterItem( int itemIndex, qboolean updateConfigString ) {
 
 	if ( bg_itemlist[itemIndex].giType == IT_WEAPON ) {
 		// register every weapon of the alt chain, not just this one
-		weapon = itemIndex;
+		weapon = bg_itemlist[itemIndex].giTag;
 		do {
-			itemRegistered[weapon] = qtrue;
+			itemRegistered[BG_WeaponItemIndex( weapon )] = qtrue;
 			weapInfo = bg_weaponInfo[weapon];
 			G_ModelIndex( weapInfo->worldModel );
 			G_ModelIndex( weapInfo->projectileModel );
 			weapon = weapInfo->altWeaponIndex;
-		} while ( weapon && weapon != itemIndex );
+		} while ( weapon && weapon != bg_itemlist[itemIndex].giTag );
 	} else {
 		if ( bg_itemlist[itemIndex].world_model[0] ) {
 			G_ModelIndex( bg_itemlist[itemIndex].world_model[0] );

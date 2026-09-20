@@ -75,7 +75,7 @@ BG_CreateClientAnimTrees
 BG_CreateClientAnimTrees (0x20004F20), compiled out under CGAMEDLL.  Retail
 keeps this one in bg_animation.c too (see the file header), but bg_animation.c
 cannot include cg_local.h -- cg_public.h redefines g_public.h's trajectory_t
-and entityState_t -- so it cannot see cgs.corpseinfo, and the function lives
+and entityState_t -- so it cannot see cg_corpseinfo, and the function lives
 here instead.
 trap_XAnimCreateTree is inlined in retail (a bare syscall 0x83 per iteration).
 bgs_animTree is read once, before both loops (0x30005182 mov edi), and the
@@ -91,10 +91,10 @@ void BG_CreateClientAnimTrees( void ) {
 	for ( i = 0; i < MAX_CLIENTS; i++ ) {
 		bg_clientinfo[i].animTree = (void *)trap_XAnimCreateTree( (int)tree );
 	}
-	/* the corpse records get their own runtime trees: cgs.corpseinfo is a
+	/* the corpse records get their own runtime trees: cg_corpseinfo is a
 	   frozen clientInfo_t and CG_ResetEntity copies over everything but this */
 	for ( i = 0; i < MAX_CORPSES; i++ ) {
-		cgs.corpseinfo[i].animTree = (void *)trap_XAnimCreateTree( (int)tree );
+		cg_corpseinfo[i].animTree = (void *)trap_XAnimCreateTree( (int)tree );
 	}
 }
 

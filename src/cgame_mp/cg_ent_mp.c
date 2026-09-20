@@ -1414,7 +1414,7 @@ void CG_CalcEntityLerpPositions( centity_t *cent ) {
 	if ( cent->currentState.eType == ET_PLAYER ) {
 		ci = &bg_clientinfo[ cent->currentState.clientNum ];
 	} else if ( cent->currentState.eType == ET_CORPSE ) {
-		ci = &cgs.corpseinfo[ cent->currentState.number - MAX_CLIENTS ];
+		ci = &cg_corpseinfo[ cent->currentState.number - MAX_CLIENTS ];
 	}
 
 	if ( ci ) {
