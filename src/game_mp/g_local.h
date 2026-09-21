@@ -1760,6 +1760,8 @@ typedef struct scr_const_s {
 G_ASSERT_SIZE( scr_const_t, 256 );
 
 extern scr_const_t scr_const;                   /* 0x202CD500 */
+/* Extension constant kept outside the retail-sized scr_const table. */
+extern unsigned short scr_const_vsay;
 
 /*
  * The script VM import block: 102 function pointers installed by Scr_FarHook

@@ -12,6 +12,150 @@
 #include "cl_update.h"
 
 int clc_serverBuild = -1;
+void CL_AddReliableCommand( const char *cmd );
+
+/* UO voice requests are pairs, selected by repeated presses within 250 ms.
+ * Keep extension state separate from the retail clientConnection layout. */
+static char cl_voiceChatText[32];
+static unsigned int cl_voiceChatRepeatCount;
+static unsigned int cl_voiceChatTime;
+static qboolean cl_voiceChatPending;
+
+extern int GetConfigString( int index, char *buf, int size );
+extern void Com_SetSpaceDelimited( qboolean enabled );
+
+/* Read a simple execKey action through the active filesystem, even when the
+ * server's pure list selects a retail UI DLL. Never execute menu scripts. */
+static qboolean CL_VoiceMenuAction( const char *path, char key, const char *action,
+	char *value, int size ) {
+	void *buffer = NULL;
+	char *cursor, *token;
+	qboolean found = qfalse, selected, match;
+	if ( FS_ReadFile( path, &buffer ) < 0 || !buffer ) return qfalse;
+	Com_BeginParseSession( path );
+	Com_SetSpaceDelimited( qfalse );
+	cursor = (char *)buffer;
+	while ( ( token = Com_ParseExt( &cursor, qtrue ) )[0] ) {
+		if ( Q_stricmp( token, "execKey" ) ) continue;
+		token = Com_ParseExt( &cursor, qtrue );
+		selected = token[0] == key && !token[1];
+		if ( strcmp( Com_ParseExt( &cursor, qtrue ), "{" ) ) break;
+		while ( ( token = Com_ParseExt( &cursor, qtrue ) )[0] && strcmp( token, "}" ) ) {
+			if ( !selected || !strcmp( token, ";" ) ) continue;
+			match = !Q_stricmp( token, action );
+			if ( Q_stricmp( token, "open" ) && Q_stricmp( token, "close" )
+				 && Q_stricmp( token, "scriptMenuResponse" ) ) goto done;
+			token = Com_ParseExt( &cursor, qtrue );
+			if ( !token[0] || !strcmp( token, "}" ) || !strcmp( token, ";" ) ) goto done;
+			if ( match ) {
+				if ( found || strlen( token ) >= (size_t)size ) goto done;
+				Q_strncpyz( value, token, size );
+				found = qtrue;
+			}
+		}
+		if ( selected ) {
+			found = found && !strcmp( token, "}" );
+			Com_EndParseSession();
+			FS_FreeFile( buffer );
+			return found;
+		}
+	}
+done:
+	Com_EndParseSession();
+	FS_FreeFile( buffer );
+	return qfalse;
+}
+
+static void CL_SendVoicePair( const char *pair ) {
+	char menu[128], response[128], config[128], path[256];
+	int i;
+	if ( strlen( pair ) == 3 && pair[0] >= '0' && pair[0] <= '9'
+		 && pair[1] == ' ' && pair[2] >= '0' && pair[2] <= '9'
+		 && CL_VoiceMenuAction( "ui_mp/wm_quickmessage.menu", pair[0], "open", menu, sizeof( menu ) )
+		 && !strpbrk( menu, "/\\.:" ) ) {
+		Com_sprintf( path, sizeof( path ), "ui_mp/scriptmenus/%s.menu", menu );
+		if ( CL_VoiceMenuAction( path, pair[2], "scriptMenuResponse", response, sizeof( response ) )
+			 && !strpbrk( response, "\"\r\n" ) ) {
+			for ( i = 0; i < 32; ++i ) {
+				GetConfigString( 1180 + i, config, sizeof( config ) );
+				if ( !Q_stricmp( config, menu ) ) {
+					CL_AddReliableCommand( va( "mr %i %i \"%s\"",
+						Cvar_VariableIntegerValue( "sv_serverId" ), i, response ) );
+					return;
+				}
+			}
+		}
+	}
+	/* Extended servers/mods may handle pairs which have no simple menu binding. */
+	CL_AddReliableCommand( va( "voice \"%s\"", pair ) );
+}
+
+static void CL_ClearVoiceChat( void ) {
+	cl_voiceChatText[0] = '\0';
+	cl_voiceChatRepeatCount = 0;
+	cl_voiceChatTime = 0;
+	cl_voiceChatPending = qfalse;
+}
+
+static void CL_Vsay_f( void ) {
+	const char *text = Cmd_Args();
+	if ( cls_state != CA_ACTIVE || clc_demoplaying ) {
+		CL_ClearVoiceChat();
+		return;
+	}
+	/* Reject oversized requests rather than selecting a truncated pair. */
+	if ( strlen( text ) >= sizeof( cl_voiceChatText ) ) {
+		Com_Printf( "vsay: arguments must fit in 31 bytes.\n" );
+		return;
+	}
+	if ( cl_voiceChatPending && !strcmp( text, cl_voiceChatText ) ) {
+		++cl_voiceChatRepeatCount;
+	} else {
+		Q_strncpyz( cl_voiceChatText, text, sizeof( cl_voiceChatText ) );
+		cl_voiceChatRepeatCount = 0;
+	}
+	cl_voiceChatTime = (unsigned int)cls_realtime;
+	cl_voiceChatPending = qtrue;
+}
+
+static void CL_PlayVoiceChat( void ) {
+	char *cursor, *token;
+	char selected[sizeof( cl_voiceChatText )];
+	int tokens = 0, pair, selectedPair;
+	size_t length;
+	if ( cls_state != CA_ACTIVE || clc_demoplaying ) {
+		CL_ClearVoiceChat();
+		return;
+	}
+	if ( !cl_voiceChatPending || (unsigned int)cls_realtime - cl_voiceChatTime <= 250u ) {
+		return;
+	}
+	cursor = cl_voiceChatText;
+	while ( Com_ParseExt( &cursor, qfalse )[0] ) {
+		++tokens;
+	}
+	if ( tokens >= 2 ) {
+		selectedPair = cl_voiceChatRepeatCount % ( tokens / 2 );
+		cursor = cl_voiceChatText;
+		for ( pair = 0; pair < selectedPair; ++pair ) {
+			Com_ParseExt( &cursor, qfalse );
+			Com_ParseExt( &cursor, qfalse );
+		}
+		token = Com_ParseExt( &cursor, qfalse );
+		Q_strncpyz( selected, token, sizeof( selected ) );
+		length = strlen( selected );
+		token = Com_ParseExt( &cursor, qfalse );
+		if ( length + strlen( token ) + 2 <= sizeof( selected ) ) {
+			selected[length++] = ' ';
+			strcpy( selected + length, token );
+			/* The pair is embedded inside a quoted reliable-command argument. */
+			if ( !strpbrk( selected, "\"\r\n" ) ) {
+				CL_SendVoicePair( selected );
+			}
+		}
+	}
+	CL_ClearVoiceChat();
+}
 
 extern void CL_ParseServerMessage( msg_t *msg );
 extern void MSS_StopSounds( int flags );        /* 0x0044FA40 */
@@ -721,6 +865,7 @@ void __cdecl CL_Disconnect(qboolean showMainMenu)
   int v1;
 
   CL_HTTPCancel();
+  CL_ClearVoiceChat();
 
   if ( com_cl_running )
   {
@@ -3817,6 +3962,7 @@ void CL_Frame( int msec ) {
 	}
 
 	CL_CheckUserinfo();
+	CL_PlayVoiceChat();
 	CL_HTTPFrame();
 	CL_UpdateFrame();
 	CL_CheckTimeout();
@@ -3946,6 +4092,7 @@ void CL_Init( void ) {
 	cl_serverloadwaiting = Cvar_Get( "cl_serverloadwaiting", "0", CVAR_ROM );
 
 	Cmd_AddCommand( "cmd", CL_ForwardToServer_f );
+	Cmd_AddCommand( "vsay", CL_Vsay_f );
 	Cmd_AddCommand( "configstrings", CL_Configstrings_f );
 	Cmd_AddCommand( "clientinfo", CL_Clientinfo_f );
 	Cmd_AddCommand( "snd_restart", CL_Snd_Restart_f );
@@ -4017,6 +4164,7 @@ void CL_Shutdown( void ) {
 	CL_ShutdownUI();
 
 	Cmd_RemoveCommand( "cmd" );
+	Cmd_RemoveCommand( "vsay" );
 	Cmd_RemoveCommand( "configstrings" );
 	Cmd_RemoveCommand( "clientinfo" );
 	Cmd_RemoveCommand( "snd_restart" );

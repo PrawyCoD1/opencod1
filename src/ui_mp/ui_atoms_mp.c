@@ -126,6 +126,60 @@ static void UI_Cache_f( void ) {
 UI_ConsoleCommand  0x40006D00 (vmMain chunk)
 =================
 */
+/* Read simple menu bindings without executing open/close or other UI effects.
+ * Conditional/custom actions remain the responsibility of a vsay listener. */
+static qboolean UI_VsayAction( const char *script, const char *action, char *value, int size ) {
+	char *cursor = (char *)script;
+	const char *token, *argument;
+	qboolean found = qfalse, match;
+	if ( !script ) return qfalse;
+	while ( String_Parse( &cursor, &token ) ) {
+		if ( !strcmp( token, ";" ) ) continue;
+		match = !Q_stricmp( token, action );
+		if ( Q_stricmp( token, "open" ) && Q_stricmp( token, "close" )
+			 && Q_stricmp( token, "scriptMenuResponse" ) ) return qfalse;
+		if ( !String_Parse( &cursor, &argument ) || !strcmp( argument, ";" ) ) return qfalse;
+		if ( match ) {
+			if ( found || strlen( argument ) >= (size_t)size ) return qfalse;
+			Q_strncpyz( value, argument, size );
+			found = qtrue;
+		}
+	}
+	return found;
+}
+
+static void UI_VsayResponse_f( void ) {
+	char pair[32], name[128], response[128], config[128], serverId[32];
+	menuDef_t *root, *menu;
+	uiClientState_t state;
+	int i;
+	if ( trap_syscall_0xE() != 2 ) return;
+	trap_Argv( 1, pair, sizeof( pair ) );
+	if ( strpbrk( pair, "\"\r\n" ) ) return;
+	trap_GetClientState( &state );
+	if ( state.connState != CA_ACTIVE || !trap_Cvar_VariableValue( "ui_scriptMenuAllowResponse" ) ) return;
+	root = Menus_FindByName( "quickmessage" );
+	if ( strlen( pair ) == 3 && pair[0] >= '0' && pair[0] <= '9'
+		 && pair[1] == ' ' && pair[2] >= '0' && pair[2] <= '9' && root
+		 && UI_VsayAction( root->onKey[(unsigned char)pair[0]], "open", name, sizeof( name ) ) ) {
+		menu = Menus_FindByName( name );
+		if ( menu && UI_VsayAction( menu->onKey[(unsigned char)pair[2]], "scriptMenuResponse", response, sizeof( response ) ) ) {
+			/* Match the same registered menu index used by the normal UI. */
+			for ( i = 0; i < 32; ++i ) {
+				trap_GetConfigString( 1180 + i, config, sizeof( config ) );
+				if ( !Q_stricmp( config, name ) ) {
+					trap_Cvar_VariableStringBuffer( "sv_serverId", serverId, sizeof( serverId ) );
+					if ( !strpbrk( response, "\"\r\n" ) )
+						trap_Cmd_ExecuteText( EXEC_APPEND, va( "cmd mr %i %i \"%s\"\n",
+							atoi( serverId ), i, response ) );
+					return;
+				}
+			}
+		}
+	}
+	trap_Cmd_ExecuteText( EXEC_APPEND, va( "cmd voice \"%s\"\n", pair ) );
+}
+
 qboolean UI_ConsoleCommand( int realTime ) {
 	char    *cmd;
 
@@ -133,6 +187,10 @@ qboolean UI_ConsoleCommand( int realTime ) {
 	uiInfo.uiDC.realTime = realTime;
 
 	cmd = UI_Argv( 0 );
+	if ( !Q_stricmp( cmd, "ui_vsay" ) ) {
+		UI_VsayResponse_f();
+		return qtrue;
+	}
 
 	// ensure minimum menu data is available
 	//Menu_Cache();

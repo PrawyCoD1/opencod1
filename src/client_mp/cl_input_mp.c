@@ -1093,10 +1093,10 @@ qboolean __cdecl CL_ReadyToSendPacket( void )
 		return qtrue;
 	}
 
-	if ( cl_maxpackets->integer < 15 ) {
-		Cvar_Set2( "cl_maxpackets", "15", qtrue );
-	} else if ( cl_maxpackets->integer > 100 ) {
-		Cvar_Set2( "cl_maxpackets", "100", qtrue );
+	if ( cl_maxpackets->integer < 25 ) {
+		Cvar_Set2( "cl_maxpackets", "25", qtrue );
+	} else if ( cl_maxpackets->integer > 125 ) {
+		Cvar_Set2( "cl_maxpackets", "125", qtrue );
 	}
 
 	oldPacketNum = ( clc_netchan.outgoingSequence - 1 ) & PACKET_MASK;

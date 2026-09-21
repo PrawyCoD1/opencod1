@@ -348,6 +348,7 @@ void        ( *MT_Free )( void *p, int size );                                  
 scr_data_t g_scr_data;                          /* 0x202CD340 */
 
 scr_const_t scr_const;                          /* 0x202CD500 */
+unsigned short scr_const_vsay;
 
 /*
 =============
@@ -492,6 +493,7 @@ void GScr_LoadConsts( void ) {
 	scr_const.dead = Scr_AllocString( "dead", 1 );
 	scr_const.auto_change = Scr_AllocString( "auto_change", 1 );
 	scr_const.manual_change = Scr_AllocString( "manual_change", 1 );
+	scr_const_vsay = Scr_AllocString( "vsay", 1 );
 }
 
 /*

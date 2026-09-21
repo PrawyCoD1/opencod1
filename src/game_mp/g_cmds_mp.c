@@ -1562,6 +1562,15 @@ void ClientCommand( int clientNum ) {
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );
 
+	/* UO voice requests are dispatched to mod scripts as one pair string. */
+	if ( Q_stricmp( cmd, "voice" ) == 0 ) {
+		if ( trap_Argc() > 1 ) {
+			Scr_AddString( ConcatArgs( 1 ) );
+			Scr_NotifyNum( ent->s.number, 0, scr_const_vsay, 1 );
+		}
+		return;
+	}
+
 	/* LTCG inlines Cmd_Say_f / Cmd_Voice_f into the four chat cases with
 	   arg0 = qfalse, so the arg-count gate and the ConcatArgs( 1 ) show up
 	   here rather than in a call. */
