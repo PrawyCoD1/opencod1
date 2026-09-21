@@ -2219,7 +2219,9 @@ static void PM_Footsteps( void ) {
 
 	effectiveStance = PM_GetEffectiveStance( pm->ps );
 
-	if ( pm->ps->groundEntityNum == ENTITYNUM_NONE ) {
+	/* CoD 1.5 PM_Footsteps (Linux 0x24AE8): linkto owns the origin and
+	 * clears groundEntityNum, but a living linked player still needs an idle. */
+	if ( pm->ps->groundEntityNum == ENTITYNUM_NONE && pm->ps->pm_type != PM_NORMAL_LINKED ) {
 		if ( ( pm->ps->pm_flags & PMF_LADDER )
 			 && pm->cmd.serverTime - pm->ps->jumpTime >= pm_ladderJumpTime ) {
 			// airborne on a ladder: the bob cycle follows the climb speed
@@ -2245,7 +2247,7 @@ static void PM_Footsteps( void ) {
 
 	walking = pm->ps->pm_flags & PMF_WALKING;
 
-	if ( pm->xyspeed < 10 ) {
+	if ( pm->xyspeed < 10 || pm->ps->pm_type == PM_NORMAL_LINKED ) {
 		// standing still
 		if ( pm->xyspeed < 1 ) {
 			pm->ps->bobCycle = 0;
@@ -3223,6 +3225,7 @@ void PmoveSingle( pmove_t *pmove ) {
 	case PM_NORMAL_LINKED:
 	case PM_DEAD_LINKED:
 		// the mover owns the origin
+		pm->ps->pm_flags &= ~PMF_LADDER;
 		pm->ps->groundEntityNum = ENTITYNUM_NONE;
 		pml.groundPlane = qfalse;
 		pml.walking = qfalse;
@@ -3230,10 +3233,9 @@ void PmoveSingle( pmove_t *pmove ) {
 		PM_UpdatePlayerWalkingFlag();
 		PM_CheckDuck();
 		PM_DropTimers();
+		/* Update linked players too; PM_Footsteps leaves dead players alone. */
+		PM_Footsteps();
 		PM_Weapon();
-		if ( pm->ps->eFlags & EF_TURRET_ACTIVE_MASK ) {
-			PM_Footsteps();
-		}
 		return;
 
 	case PM_INTERMISSION:
